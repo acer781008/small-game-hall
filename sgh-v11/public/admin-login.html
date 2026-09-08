@@ -1,0 +1,6 @@
+<!doctype html><html lang="zh-TW"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>小遊戲館｜主控登入</title><link rel="stylesheet" href="/styles.css"></head><body class="cute-login-page"><main class="login cute-login-card"><div class="login-mascots" aria-hidden="true">⭐ 🎮 🎁</div><h1>小遊戲館主控</h1><div class="login-ribbon">主控專用</div><p class="muted" style="text-align:center">請輸入主控密碼</p><input id="pw" type="password" placeholder="輸入主控密碼" autocomplete="current-password"><button id="go" style="width:100%;margin-top:12px">進入主控後台</button><div id="msg" class="notice" style="display:none"></div></main><script>
+const pw=document.getElementById('pw'),msg=document.getElementById('msg'),go=document.getElementById('go');
+function showMsg(t){msg.textContent=t;msg.style.display='block'}
+async function submit(){msg.style.display='none';if(!pw.value)return showMsg('請輸入主控密碼');try{const r=await fetch('/api/admin/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({password:pw.value})});const d=await r.json();if(d.ok||d.success){location.href='/admin.html';return}showMsg(d.message||'密碼錯誤')}catch{showMsg('無法連線到伺服器')}}
+go.onclick=submit;pw.addEventListener('keydown',e=>e.key==='Enter'&&submit());
+</script></body></html>

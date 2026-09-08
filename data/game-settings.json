@@ -1,0 +1,232 @@
+{
+  "games": {
+    "bingo": {
+      "roomId": "178086",
+      "controlMode": "admin",
+      "version": "farm",
+      "theme": "farm",
+      "playMode": "normal",
+      "items": [
+        {
+          "id": "farm-116",
+          "face": "116",
+          "group": "farm",
+          "name": "圖案 116",
+          "file": "farm-116.png"
+        },
+        {
+          "id": "farm-055",
+          "face": "055",
+          "group": "farm",
+          "name": "圖案 055",
+          "file": "farm-055.png"
+        },
+        {
+          "id": "farm-052",
+          "face": "052",
+          "group": "farm",
+          "name": "圖案 052",
+          "file": "farm-052.png"
+        },
+        {
+          "id": "farm-040",
+          "face": "040",
+          "group": "farm",
+          "name": "圖案 040",
+          "file": "farm-040.png"
+        },
+        {
+          "id": "farm-063",
+          "face": "063",
+          "group": "farm",
+          "name": "圖案 063",
+          "file": "farm-063.png"
+        },
+        {
+          "id": "farm-069",
+          "face": "069",
+          "group": "farm",
+          "name": "圖案 069",
+          "file": "farm-069.png"
+        },
+        {
+          "id": "farm-064",
+          "face": "064",
+          "group": "farm",
+          "name": "圖案 064",
+          "file": "farm-064.png"
+        },
+        {
+          "id": "farm-053",
+          "face": "053",
+          "group": "farm",
+          "name": "圖案 053",
+          "file": "farm-053.png"
+        },
+        {
+          "id": "farm-043",
+          "face": "043",
+          "group": "farm",
+          "name": "圖案 043",
+          "file": "farm-043.png"
+        },
+        {
+          "id": "farm-059",
+          "face": "059",
+          "group": "farm",
+          "name": "圖案 059",
+          "file": "farm-059.png"
+        },
+        {
+          "id": "farm-031",
+          "face": "031",
+          "group": "farm",
+          "name": "圖案 031",
+          "file": "farm-031.png"
+        },
+        {
+          "id": "farm-048",
+          "face": "048",
+          "group": "farm",
+          "name": "圖案 048",
+          "file": "farm-048.png"
+        },
+        {
+          "id": "farm-015",
+          "face": "015",
+          "group": "farm",
+          "name": "圖案 015",
+          "file": "farm-015.png"
+        },
+        {
+          "id": "farm-016",
+          "face": "016",
+          "group": "farm",
+          "name": "圖案 016",
+          "file": "farm-016.png"
+        },
+        {
+          "id": "farm-058",
+          "face": "058",
+          "group": "farm",
+          "name": "圖案 058",
+          "file": "farm-058.png"
+        },
+        {
+          "id": "farm-047",
+          "face": "047",
+          "group": "farm",
+          "name": "圖案 047",
+          "file": "farm-047.png"
+        },
+        {
+          "id": "farm-056",
+          "face": "056",
+          "group": "farm",
+          "name": "圖案 056",
+          "file": "farm-056.png"
+        },
+        {
+          "id": "farm-046",
+          "face": "046",
+          "group": "farm",
+          "name": "圖案 046",
+          "file": "farm-046.png"
+        },
+        {
+          "id": "farm-049",
+          "face": "049",
+          "group": "farm",
+          "name": "圖案 049",
+          "file": "farm-049.png"
+        },
+        {
+          "id": "farm-027",
+          "face": "027",
+          "group": "farm",
+          "name": "圖案 027",
+          "file": "farm-027.png"
+        },
+        {
+          "id": "farm-065",
+          "face": "065",
+          "group": "farm",
+          "name": "圖案 065",
+          "file": "farm-065.png"
+        },
+        {
+          "id": "farm-057",
+          "face": "057",
+          "group": "farm",
+          "name": "圖案 057",
+          "file": "farm-057.png"
+        },
+        {
+          "id": "farm-073",
+          "face": "073",
+          "group": "farm",
+          "name": "圖案 073",
+          "file": "farm-073.png"
+        },
+        {
+          "id": "farm-061",
+          "face": "061",
+          "group": "farm",
+          "name": "圖案 061",
+          "file": "farm-061.png"
+        },
+        {
+          "id": "farm-003",
+          "face": "003",
+          "group": "farm",
+          "name": "圖案 003",
+          "file": "farm-003.png"
+        }
+      ],
+      "size": 25,
+      "phase": "playing",
+      "timeLimitEnabled": true,
+      "gameSeconds": 90,
+      "drawIntervalMs": 4000,
+      "targetLines": 1,
+      "note": "",
+      "maxPlays": 1,
+      "startCount": 0,
+      "finishCount": 0
+    },
+    "sudoku": {
+      "variant": "標準數獨",
+      "size": 9,
+      "difficulty": "初級",
+      "showWrongCount": false,
+      "roundMinutes": 5
+    },
+    "memory": {
+      "type": "farm",
+      "boardSize": "4x4",
+      "gameMinutes": "3",
+      "maxPlays": "1"
+    },
+    "shelf": {
+      "themes": {
+        "farm": true,
+        "candy": true
+      },
+      "attempts": 3,
+      "levels": {
+        "normal": {
+          "open": true,
+          "min": 3
+        },
+        "hard": {
+          "open": false,
+          "min": 4
+        },
+        "hell": {
+          "open": false,
+          "min": 5
+        }
+      }
+    }
+  }
+}

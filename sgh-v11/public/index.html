@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>小遊戲館</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="hall-page cute-hall">
+<header class="cute-topbar">
+  <a class="cute-brand" href="/">🎮 <span>小遊戲館</span></a>
+  <div class="cute-top-spacer"></div>
+  <a class="cute-admin-link" href="/admin-login.html">⚙️ 主控後台</a>
+</header>
+
+<main class="cute-hall-wrap">
+  <section class="cute-banner" aria-label="小遊戲館">
+    <img src="/assets/hall-banner.webp" alt="可愛繽紛的小遊戲館">
+  </section>
+
+  <section class="hall-info-card">
+    <div>
+      <div class="hall-info-label">🎟️ 本場活動</div>
+      <div class="hall-code" id="activityCode">------</div>
+    </div>
+    <div class="hall-info-main">
+      <div id="activityStatus" class="activity-status">正在讀取活動狀態…</div>
+      <p id="hallNote" class="hall-note" style="display:none"></p>
+    </div>
+  </section>
+
+  <div class="cute-section-title">
+    <span>⭐</span>
+    <div><h2>選一個遊戲開始挑戰</h2><p>時間內完成指定條件，就有機會獲得獎品！</p></div>
+    <span>⭐</span>
+  </div>
+
+  <section class="cute-game-grid" id="gameGrid">
+    <article class="cute-game-card bingo-card" data-game="bingo">
+      <div class="cute-art"><img src="/assets/bingo-art.webp" alt="賓果遊戲插圖"></div>
+      <div class="cute-game-content">
+        <div class="cute-eyebrow">連成一線・挑戰好運！</div>
+        <h3>賓果</h3>
+        <p>完成任意 1 線 Bingo 即達成條件。</p>
+        <span class="game-state">● 開放中</span>
+        <button class="go" data-game="bingo">▶ 開始遊戲</button>
+      </div>
+      <span class="deco deco-a">★</span><span class="deco deco-b">✦</span>
+    </article>
+
+    <article class="cute-game-card sudoku-card" data-game="sudoku">
+      <div class="cute-art"><img src="/assets/sudoku-art.webp" alt="數獨遊戲插圖"></div>
+      <div class="cute-game-content">
+        <div class="cute-eyebrow">動動腦・挑戰極限！</div>
+        <h3>數獨</h3>
+        <p>在單局時間內正確完成整盤即可達成。</p>
+        <span class="game-state">● 開放中</span>
+        <button class="go" data-game="sudoku">▶ 開始遊戲</button>
+      </div>
+      <span class="deco deco-a">✦</span><span class="deco deco-b">★</span>
+    </article>
+
+    <article class="cute-game-card memory-card" data-game="memory">
+      <div class="cute-art"><img src="/assets/memory-art.webp" alt="翻牌遊戲插圖"></div>
+      <div class="cute-game-content">
+        <div class="cute-eyebrow">翻開卡片・挑戰驚喜！</div>
+        <h3>翻牌</h3>
+        <p>時間內完成全部配對即可達成。</p>
+        <span class="game-state">● 開放中</span>
+        <button class="go" data-game="memory">▶ 開始遊戲</button>
+      </div>
+      <span class="deco deco-a">♥</span><span class="deco deco-b">★</span>
+    </article>
+
+    <article class="cute-game-card shelf-card" data-game="shelf">
+      <div class="cute-art"><img src="/assets/shelf-art.webp" alt="貨架整理遊戲插圖"></div>
+      <div class="cute-game-content">
+        <div class="cute-eyebrow">整理小物・療癒時光！</div>
+        <h3>貨架整理</h3>
+        <p>時間內完成貨架整理即可達成。</p>
+        <span class="game-state">● 開放中</span>
+        <button class="go" data-game="shelf">▶ 開始遊戲</button>
+      </div>
+      <span class="deco deco-a">✦</span><span class="deco deco-b">♥</span>
+    </article>
+  </section>
+
+  <p id="noGames" class="cute-empty" style="display:none">🎮 目前沒有開放中的遊戲</p>
+  <p id="badActivity" class="cute-empty" style="display:none">⚠️ 這個活動碼目前無法使用，請向主控取得最新玩家網址。</p>
+  <div class="cute-footer">☁️ 小小遊戲・大大歡樂 ⭐ 祝你挑戰成功！ ☁️</div>
+</main>
+
+<script>
+let activity=null,timer=null;const qs=new URLSearchParams(location.search);const requested=qs.get('activity')||'';
+const gameUrls={bingo:c=>`/games/bingo/index.html?room=${encodeURIComponent(c)}&activity=${encodeURIComponent(c)}`,sudoku:c=>`/games/sudoku/player.html?activity=${encodeURIComponent(c)}`,memory:c=>`/games/memory/player.html?room=${encodeURIComponent(c)}&activity=${encodeURIComponent(c)}`,shelf:c=>`/games/shelf/player.html?room=${encodeURIComponent(c)}&activity=${encodeURIComponent(c)}`};
+function fmtDate(ms){return new Date(ms).toLocaleString('zh-TW',{hour12:false})}
+function fmtRemain(ms){if(ms<=0)return '00:00:00';const s=Math.floor(ms/1000),d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60),ss=s%60;return (d?d+'天 ':'')+[h,m,ss].map(n=>String(n).padStart(2,'0')).join(':')}
+function state(){const now=Date.now();if(activity.startAt&&now<activity.startAt)return {open:false,type:'scheduled',label:'尚未開始',text:`⏳ 尚未開始｜${fmtDate(activity.startAt)} 開賽｜倒數 ${fmtRemain(activity.startAt-now)}`};if(activity.endAt&&now>=activity.endAt)return {open:false,type:'ended',label:'活動已結束',text:`🏁 活動已結束｜${fmtDate(activity.endAt)}`};return {open:true,type:'open',label:'開放中',text:`🟢 活動進行中${activity.endAt?'｜結束 '+fmtDate(activity.endAt):'｜未設定結束時間'}`}}
+function refreshStatus(){if(!activity)return;const st=state(),el=document.getElementById('activityStatus');el.className='activity-status '+st.type;el.textContent=st.text;document.querySelectorAll('.game-card,.cute-game-card').forEach(card=>{const badge=card.querySelector('.game-state');if(badge){badge.className='game-state '+st.type;badge.textContent=(st.open?'● ':'')+st.label}});document.querySelectorAll('.go').forEach(b=>{b.disabled=!st.open;b.textContent=st.open?'▶ 開始遊戲':(st.type==='scheduled'?'⏳ 尚未開始':'🏁 活動已結束')})}
+async function load(){try{const r=await fetch('/api/activity',{cache:'no-store'}),d=await r.json();activity=d.activity;if(requested&&requested!==activity.code){document.getElementById('gameGrid').style.display='none';document.getElementById('badActivity').style.display='block';document.getElementById('activityCode').textContent=requested;return}document.getElementById('activityCode').textContent=activity.code;if(activity.note){const n=document.getElementById('hallNote');n.textContent='📝 '+activity.note;n.style.display='block'}let shown=0;document.querySelectorAll('.cute-game-card').forEach(card=>{const on=activity.games?.[card.dataset.game]!==false;card.style.display=on?'':'none';if(on)shown++});document.getElementById('noGames').style.display=shown?'none':'block';document.querySelectorAll('.go').forEach(b=>b.onclick=()=>{if(!state().open)return;location.href=gameUrls[b.dataset.game](activity.code)});refreshStatus();timer=setInterval(refreshStatus,1000)}catch(e){document.getElementById('badActivity').style.display='block'}}load();
+</script>
+</body>
+</html>

@@ -1,5 +1,32 @@
 {
   "rooms": {
+    "178086": {
+      "room": "178086",
+      "title": "貨架整理小遊戲",
+      "themes": {
+        "farm": true,
+        "candy": true
+      },
+      "attempts": 3,
+      "levels": {
+        "normal": {
+          "open": true,
+          "min": 3
+        },
+        "hard": {
+          "open": false,
+          "min": 4
+        },
+        "hell": {
+          "open": false,
+          "min": 5
+        }
+      },
+      "runs": [],
+      "records": [],
+      "createdAt": 1788862265827,
+      "updatedAt": 1788862265827
+    },
     "554828": {
       "room": "554828",
       "title": "貨架整理小遊戲",

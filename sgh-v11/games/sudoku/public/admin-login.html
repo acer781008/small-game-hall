@@ -1,0 +1,17 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>數獨小遊戲｜主控登入</title><link rel="stylesheet" href="styles.css"></head><body>
+<div class="login-shell"><div class="login-card"><h1>🧠 數獨小遊戲</h1><p style="text-align:center">主控登入</p><input id="pw" type="password" placeholder="請輸入主控密碼"><button id="login" class="btn primary" style="width:100%;padding:14px">進入主控</button><div id="msg" class="tiny" style="margin-top:10px;text-align:center"></div></div></div>
+<script>
+const pw=document.querySelector('#pw'), login=document.querySelector('#login'), msg=document.querySelector('#msg');
+async function doLogin(){
+  msg.textContent=''; login.disabled=true;
+  try{
+    const res=await fetch('/api/admin/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({password:pw.value})});
+    const data=await res.json();
+    if(data.ok){sessionStorage.setItem('sudokuAdmin','1');location.href='/admin.html';return;}
+    msg.textContent='密碼錯誤';
+  }catch(e){msg.textContent='登入失敗，請確認伺服器是否已啟動';}
+  finally{login.disabled=false;}
+}
+login.addEventListener('click',doLogin);
+pw.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+</script></body></html>

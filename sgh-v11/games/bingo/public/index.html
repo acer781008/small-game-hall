@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="/games/bingo/style.css?v=21.2">
+  <title>賓果小遊戲</title>
+</head>
+<body class="cute-theme player-page">
+<div class="top"><h1>🎱 賓果小遊戲</h1></div>
+
+<div class="wrap">
+  <div class="card login">
+    <div class="welcome-animal">🐰 🐻 🐱</div>
+    <h2>加入賓果小遊戲</h2>
+    <p id="roomHint" class="room-hint"></p>
+
+    <label>🎮 遊戲名</label>
+    <input id="playerName" autocomplete="off" maxlength="30" placeholder="請輸入遊戲名">
+    <br><br>
+    <button id="joinBtn">🚀 加入遊戲</button>
+    <p id="joinStatus" class="muted">等待連線…</p>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket=io();
+const playerName=document.getElementById('playerName');
+const joinBtn=document.getElementById('joinBtn');
+const joinStatus=document.getElementById('joinStatus');
+const roomHint=document.getElementById('roomHint');
+const params=new URLSearchParams(location.search);
+const roomId=(params.get('room')||'').trim();
+
+function getClientId(){
+  let id=localStorage.getItem('bingoClientId')||sessionStorage.getItem('bingoClientId');
+  if(!id){id=crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random();}
+  localStorage.setItem('bingoClientId',id); sessionStorage.setItem('bingoClientId',id);
+  return id;
+}
+
+if(roomId){
+  roomHint.textContent='🎟️ 活動碼 '+roomId+'｜輸入遊戲名即可加入';
+}else{
+  roomHint.textContent='⚠️ 請使用管理員提供的玩家專屬連結進入';
+  joinBtn.disabled=true;
+}
+
+socket.on('connect',()=>{
+  joinStatus.textContent=roomId?'✅ 已連線，可以加入遊戲。':'請從玩家專屬網址進入。';
+  if(roomId)joinBtn.disabled=false;
+});
+socket.on('connect_error',()=>{joinStatus.textContent='❌ 無法連到遊戲主機。';if(roomId)joinBtn.disabled=false});
+
+function join(){
+  const name=playerName.value.trim();
+  if(!roomId)return alert('❌ 請使用管理員提供的玩家專屬網址進入');
+  if(!name)return alert('❌ 請輸入遊戲名');
+  joinBtn.disabled=true;joinStatus.textContent='正在加入遊戲…';
+  socket.emit('joinRoom',{roomId,name,clientId:getClientId()});
+}
+joinBtn.addEventListener('click',join);
+playerName.addEventListener('keydown',e=>{if(e.key==='Enter')join()});
+
+socket.on('joinError',message=>{joinBtn.disabled=false;joinStatus.textContent='❌ '+message;alert('❌ '+message)});
+socket.on('joinSuccess',data=>{
+  const player={clientId:getClientId(),name:playerName.value.trim(),roomId:data.roomId,size:data.size};
+  sessionStorage.setItem('bingoPlayer',JSON.stringify(player)); localStorage.setItem('bingoPlayer',JSON.stringify(player));
+  location.href='/games/bingo/game.html';
+});
+</script>
+</body>
+</html>

@@ -1,14 +1,16 @@
 {
-  "currentCode": "554828",
+  "currentCode": "178086",
   "activities": {
-    "554828": {
-      "code": "554828",
+    "178086": {
+      "code": "178086",
       "note": "",
-      "createdAt": 1788852309943,
+      "createdAt": 1788862265815,
+      "startAt": null,
+      "endAt": null,
       "games": {
-        "bingo": false,
+        "bingo": true,
         "sudoku": true,
-        "memory": false,
+        "memory": true,
         "shelf": true
       }
     }
