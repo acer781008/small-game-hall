@@ -1,0 +1,16 @@
+{
+  "currentCode": "554828",
+  "activities": {
+    "554828": {
+      "code": "554828",
+      "note": "",
+      "createdAt": 1788852309943,
+      "games": {
+        "bingo": false,
+        "sudoku": true,
+        "memory": false,
+        "shelf": true
+      }
+    }
+  }
+}
