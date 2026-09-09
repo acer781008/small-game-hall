@@ -32,7 +32,7 @@
 
   <div class="cute-section-title">
     <span>⭐</span>
-    <div><h2>選一個遊戲開始挑戰</h2><p>時間內完成指定條件，就有機會獲得獎品！</p></div>
+    <div><h2>選一個遊戲開始挑戰</h2><p>完成指定條件，就有機會獲得獎品！</p></div>
     <span>⭐</span>
   </div>
 
@@ -54,7 +54,7 @@
       <div class="cute-game-content">
         <div class="cute-eyebrow">動動腦・挑戰極限！</div>
         <h3>數獨</h3>
-        <p>在單局時間內正確完成整盤即可達成。</p>
+        <p>正確完成整盤即可達成。</p>
         <span class="game-state">● 開放中</span>
         <button class="go" data-game="sudoku">▶ 開始遊戲</button>
       </div>
@@ -66,7 +66,7 @@
       <div class="cute-game-content">
         <div class="cute-eyebrow">翻開卡片・挑戰驚喜！</div>
         <h3>翻牌</h3>
-        <p>時間內完成全部配對即可達成。</p>
+        <p>完成全部配對即可達成。</p>
         <span class="game-state">● 開放中</span>
         <button class="go" data-game="memory">▶ 開始遊戲</button>
       </div>
@@ -78,11 +78,35 @@
       <div class="cute-game-content">
         <div class="cute-eyebrow">整理小物・療癒時光！</div>
         <h3>貨架整理</h3>
-        <p>時間內完成貨架整理即可達成。</p>
+        <p>完成貨架整理即可達成。</p>
         <span class="game-state">● 開放中</span>
         <button class="go" data-game="shelf">▶ 開始遊戲</button>
       </div>
       <span class="deco deco-a">✦</span><span class="deco deco-b">♥</span>
+    </article>
+
+    <article class="cute-game-card lianliankan-card" data-game="lianliankan">
+      <div class="cute-art"><img src="/assets/lianliankan-art.webp?v=153" alt="連連看遊戲插圖"></div>
+      <div class="cute-game-content">
+        <div class="cute-eyebrow">連起圖案・快速消除！</div>
+        <h3>連連看</h3>
+        <p>找出能連線的相同圖案，全部消除即達成。</p>
+        <span class="game-state">● 開放中</span>
+        <button class="go" data-game="lianliankan">▶ 開始遊戲</button>
+      </div>
+      <span class="deco deco-a">✦</span><span class="deco deco-b">●</span>
+    </article>
+
+    <article class="cute-game-card puzzle-card" data-game="puzzle">
+      <div class="cute-art"><img src="/assets/puzzle-art.webp?v=152" alt="拼圖挑戰插圖"></div>
+      <div class="cute-game-content">
+        <div class="cute-eyebrow">拼回原圖・完成挑戰！</div>
+        <h3>拼圖挑戰</h3>
+        <p>把所有拼圖片交換回正確位置即可達成。</p>
+        <span class="game-state">● 開放中</span>
+        <button class="go" data-game="puzzle">▶ 開始遊戲</button>
+      </div>
+      <span class="deco deco-a">♥</span><span class="deco deco-b">✦</span>
     </article>
   </section>
 
@@ -94,8 +118,8 @@
 
 <script>
 let activity=null,timer=null;const qs=new URLSearchParams(location.search);const requested=qs.get('activity')||'';
-const gameUrls={bingo:c=>`/games/bingo/index.html?room=${encodeURIComponent(c)}&activity=${encodeURIComponent(c)}`,sudoku:c=>`/games/sudoku/player.html?activity=${encodeURIComponent(c)}`,memory:c=>`/games/memory/player.html?room=${encodeURIComponent(c)}&activity=${encodeURIComponent(c)}`,shelf:c=>`/games/shelf/player.html?room=${encodeURIComponent(c)}&activity=${encodeURIComponent(c)}`};
-const prizeGameMeta={bingo:{icon:'🎱',name:'賓果'},sudoku:{icon:'🧠',name:'數獨'},memory:{icon:'🎴',name:'翻牌'},shelf:{icon:'🛒',name:'貨架整理'}};
+const gameUrls={bingo:c=>`/games/bingo/index.html?room=${encodeURIComponent(c)}&activity=${encodeURIComponent(c)}`,sudoku:c=>`/games/sudoku/player.html?activity=${encodeURIComponent(c)}`,memory:c=>`/games/memory/player.html?room=${encodeURIComponent(c)}&activity=${encodeURIComponent(c)}`,shelf:c=>`/games/shelf/player.html?room=${encodeURIComponent(c)}&activity=${encodeURIComponent(c)}`,lianliankan:c=>`/games/lianliankan/player.html?activity=${encodeURIComponent(c)}`,puzzle:c=>`/games/puzzle/player.html?activity=${encodeURIComponent(c)}`};
+const prizeGameMeta={bingo:{icon:'🎱',name:'賓果'},sudoku:{icon:'🧠',name:'數獨'},memory:{icon:'🎴',name:'翻牌'},shelf:{icon:'🛒',name:'貨架整理'},lianliankan:{icon:'🔗',name:'連連看'},puzzle:{icon:'🧩',name:'拼圖挑戰'}};
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 async function openPrizes(){if(!activity)return;const modal=document.getElementById('prizeModal'),list=document.getElementById('publicPrizeList');modal.classList.remove('hidden');list.innerHTML='<p class="muted">正在讀取…</p>';try{const r=await fetch('/api/public/prizes?activity='+encodeURIComponent(activity.code),{cache:'no-store'}),d=await r.json();if(!r.ok)throw new Error(d.message||'無法讀取獎品');document.getElementById('prizeModeText').textContent=d.awardMode==='B'?'B 模式｜不同遊戲有指定獎品':'A 模式｜所有遊戲共用獎池';const prizes=d.prizes||[];if(!prizes.length){list.innerHTML='<div class="public-prize-empty">目前尚未設定獎品</div>';return}if(d.awardMode==='B'){const html=[];for(const [id,m] of Object.entries(prizeGameMeta)){const rows=prizes.filter(p=>(p.games||[]).includes(id));if(!rows.length)continue;html.push(`<section class="public-prize-group"><h3>${m.icon} ${m.name}</h3>${rows.map(p=>`<div class="public-prize-row ${Number(p.quantity)<=0?'soldout':''}"><span>${esc(p.name)}</span><b>${Number(p.quantity)>0?'剩餘 '+Number(p.quantity):'已兌換完畢'}</b></div>`).join('')}</section>`)}list.innerHTML=html.length?html.join(''):'<div class="public-prize-empty">目前沒有可顯示的指定獎品</div>'}else list.innerHTML=prizes.map(p=>`<div class="public-prize-row ${Number(p.quantity)<=0?'soldout':''}"><span>${esc(p.name)}</span><b>${Number(p.quantity)>0?'剩餘 '+Number(p.quantity):'已兌換完畢'}</b></div>`).join('')}catch(e){list.innerHTML=`<div class="public-prize-empty">${esc(e.message)}</div>`}}
 document.getElementById('showPrizesBtn').onclick=openPrizes;document.getElementById('closePrizeModal').onclick=()=>document.getElementById('prizeModal').classList.add('hidden');document.getElementById('prizeModal').onclick=e=>{if(e.target.id==='prizeModal')e.currentTarget.classList.add('hidden')};

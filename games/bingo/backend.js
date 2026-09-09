@@ -2,7 +2,7 @@ const express = require("express");
 const path = require("path");
 const crypto = require("crypto");
 
-module.exports = function initBingo({app, io, isAdmin, awardPrize, recordPlay=async()=>({status:'skipped'}), isGameEnabled=()=>true, isActivityCurrent=()=>true, isActivityOpen=()=>true}) {
+module.exports = function initBingo({app, io, isAdmin, awardPrize, recordPlay=async()=>({status:'skipped'}), recordCompletion=async()=>({}), getCompletionStatus=()=>({allowed:true,max:0,completions:0}), isGameEnabled=()=>true, isActivityCurrent=()=>true, isActivityOpen=()=>true}) {
 const rooms = new Map();
 const timers = new Map();
 function generateRoomId(){let id;do{id=String(Math.floor(100000+Math.random()*900000));}while(rooms.has(id));return id;}
@@ -15,10 +15,10 @@ function emitRanking(room){io.to(room.id).emit('rankingUpdate',ranking(room));}
 const FARM_DUPLICATE_GROUPS=[["farm-046","farm-131"],["farm-047","farm-132"],["farm-048","farm-099","farm-133"],["farm-049","farm-050"],["farm-101","farm-102"],["farm-123","farm-126"]];
 function pickFarmItems(count){const groupById=new Map();FARM_DUPLICATE_GROUPS.forEach((g,i)=>g.forEach(id=>groupById.set(id,'dup-'+i)));const shuffled=FARM_ITEMS.slice().sort(()=>Math.random()-.5),used=new Set(),picked=[];for(const item of shuffled){const key=groupById.get(item.id)||item.id;if(used.has(key))continue;used.add(key);picked.push(item);if(picked.length>=count)break;}return picked;}
 
-function roomInfo(room){return {roomId:room.id,controlMode:room.controlMode||'admin',version:room.version,theme:room.theme,playMode:room.playMode,items:room.items,size:room.size,phase:room.phase,timeLimitEnabled:room.timeLimitEnabled,gameSeconds:room.gameSeconds,drawIntervalMs:room.drawIntervalMs,targetLines:1,note:room.note,maxPlays:room.maxPlays||0,startCount:room.startCount||0,finishCount:room.finishCount||0};}
-function ensureRoom(roomId){roomId=String(roomId||'').trim();if(!roomId)return null;if(rooms.has(roomId))return rooms.get(roomId);const size=25,version='farm',playMode='normal';const room={id:roomId,controlMode:'admin',version,theme:'farm',playMode,items:pickFarmItems(size),size,phase:'playing',timeLimitEnabled:true,gameSeconds:90,drawIntervalMs:4000,targetLines:1,note:'',maxPlays:1,players:new Map(),startCount:0,finishCount:0};rooms.set(roomId,room);return room;}
+function roomInfo(room){return {roomId:room.id,controlMode:room.controlMode||'admin',version:room.version,theme:room.theme,playMode:room.playMode,items:room.items,size:room.size,phase:room.phase,timeLimitEnabled:room.timeLimitEnabled,gameSeconds:room.gameSeconds,drawIntervalMs:room.drawIntervalMs,targetLines:1,note:room.note,startCount:room.startCount||0,finishCount:room.finishCount||0};}
+function ensureRoom(roomId){roomId=String(roomId||'').trim();if(!roomId)return null;if(rooms.has(roomId))return rooms.get(roomId);const size=25,version='farm',playMode='normal';const room={id:roomId,controlMode:'admin',version,theme:'farm',playMode,items:pickFarmItems(size),size,phase:'playing',timeLimitEnabled:true,gameSeconds:90,drawIntervalMs:4000,targetLines:1,note:'',players:new Map(),startCount:0,finishCount:0};rooms.set(roomId,room);return room;}
 function hallGetSettings(roomId){const r=ensureRoom(roomId);return r?roomInfo(r):null;}
-function hallSetSettings(roomId,patch={}){const room=ensureRoom(roomId);const size=[25,36,49,64].includes(Number(patch.size))?Number(patch.size):room.size;const version=['number','picture','farm'].includes(patch.version)?patch.version:room.version;const playMode=['normal','advanced'].includes(patch.playMode)?patch.playMode:room.playMode;if(version==='picture'&&![25,36].includes(size))throw new Error('麻將版目前只開放 5×5、6×6');room.version=version;room.theme=version==='picture'?'mahjong':version==='farm'?'farm':null;room.playMode=playMode;room.size=size;room.gameSeconds=Math.max(30,Number(patch.gameSeconds||room.gameSeconds||90));room.drawIntervalMs=Math.max(1000,Number(patch.drawIntervalMs||room.drawIntervalMs||4000));room.maxPlays=Math.max(0,Number(patch.maxPlays??room.maxPlays)||0);let items=null;if(version==='picture'){const shuffled=MAHJONG_ITEMS.slice().sort(()=>Math.random()-.5);items=playMode==='normal'?shuffled.slice(0,size):MAHJONG_ITEMS.slice();}if(version==='farm'){const poolSize=playMode==='normal'?size:({25:45,36:60,49:75,64:90}[size]||45);items=pickFarmItems(poolSize);}room.items=items;io.to(room.id).emit('roomState',{...roomInfo(room),ranking:ranking(room),playerCount:onlinePlayerCount(room)});return roomInfo(room);}
+function hallSetSettings(roomId,patch={}){const room=ensureRoom(roomId);const size=[25,36,49,64].includes(Number(patch.size))?Number(patch.size):room.size;const version=['number','picture','farm'].includes(patch.version)?patch.version:room.version;const playMode=['normal','advanced'].includes(patch.playMode)?patch.playMode:room.playMode;if(version==='picture'&&![25,36].includes(size))throw new Error('麻將版目前只開放 5×5、6×6');room.version=version;room.theme=version==='picture'?'mahjong':version==='farm'?'farm':null;room.playMode=playMode;room.size=size;room.gameSeconds=Number(patch.gameSeconds)===0?0:Math.max(60,Number(patch.gameSeconds||room.gameSeconds||120));room.drawIntervalMs=Math.max(1000,Number(patch.drawIntervalMs||room.drawIntervalMs||4000));let items=null;if(version==='picture'){const shuffled=MAHJONG_ITEMS.slice().sort(()=>Math.random()-.5);items=playMode==='normal'?shuffled.slice(0,size):MAHJONG_ITEMS.slice();}if(version==='farm'){const poolSize=playMode==='normal'?size:({25:45,36:60,49:75,64:90}[size]||45);items=pickFarmItems(poolSize);}room.items=items;io.to(room.id).emit('roomState',{...roomInfo(room),ranking:ranking(room),playerCount:onlinePlayerCount(room)});return roomInfo(room);}
 function openActivity(room){if(!room||room.phase!=='waiting')return;room.phase='playing';io.to(room.id).emit('activityOpened',{activityEndsAt:room.activityEndsAt});}
 function endActivity(room){if(!room||room.phase==='ended')return;room.phase='ended';room.endedAt=Date.now();io.to(room.id).emit('activityEnded',{ranking:ranking(room)});}
 function scheduleRoom(room){clearTimers(room.id);const t=getTimers(room.id);if(room.scheduledAt) t.start=setTimeout(()=>openActivity(room),Math.max(0,room.scheduledAt-Date.now()));if(room.activityEndsAt)t.end=setTimeout(()=>endActivity(room),Math.max(0,room.activityEndsAt-Date.now()));}
@@ -82,7 +82,7 @@ app.post('/api/admin/create-room',(req,res)=>{
   const size=Number(req.body.size);const version=['number','picture','farm'].includes(req.body.version)?req.body.version:'farm';
   const controlMode='admin';
   const playMode=['normal','advanced'].includes(req.body.playMode)?req.body.playMode:'normal';
-  const timeLimitEnabled=true;const gameSeconds=Math.max(30,Number(req.body.gameSeconds||90));const drawIntervalMs=Number(req.body.drawIntervalMs||4000);const targetLines=1;const note=String(req.body.note||'').trim();const maxPlays=Math.max(0,Number(req.body.maxPlays)||0);
+  const timeLimitEnabled=true;const gameSeconds=Number(req.body.gameSeconds)===0?0:Math.max(60,Number(req.body.gameSeconds||120));const drawIntervalMs=Number(req.body.drawIntervalMs||4000);const targetLines=1;const note=String(req.body.note||'').trim();
   if(!roomId||rooms.has(roomId))return res.status(400).json({success:false,message:rooms.has(roomId)?'房間號碼已存在':'房間號碼錯誤'});
   if(![25,36,49,64].includes(size))return res.status(400).json({success:false,message:'盤面格數錯誤'});
   if(version==='picture'&&![25,36].includes(size))return res.status(400).json({success:false,message:'麻將版目前只開放 5×5、6×6'});
@@ -90,7 +90,7 @@ app.post('/api/admin/create-room',(req,res)=>{
   let items=null;
   if(version==='picture'){const shuffled=MAHJONG_ITEMS.slice().sort(()=>Math.random()-.5);items=playMode==='normal'?shuffled.slice(0,size):MAHJONG_ITEMS.slice();}
   if(version==='farm'){const poolSize=playMode==='normal'?size:({25:45,36:60,49:75,64:90}[size]||45);items=pickFarmItems(poolSize);}
-  const room={id:roomId,controlMode,version,theme,playMode,items,size,phase:'playing',timeLimitEnabled,gameSeconds,drawIntervalMs,targetLines,note,maxPlays,players:new Map(),startCount:0,finishCount:0};
+  const room={id:roomId,controlMode,version,theme,playMode,items,size,phase:'playing',timeLimitEnabled,gameSeconds,drawIntervalMs,targetLines,note,players:new Map(),startCount:0,finishCount:0};
   rooms.set(roomId,room);res.json({success:true,room:roomInfo(room)});
 });
 app.put('/api/admin/room/:roomId',(req,res)=>{
@@ -98,7 +98,7 @@ app.put('/api/admin/room/:roomId',(req,res)=>{
   const room=rooms.get(String(req.params.roomId||'').trim());if(!room)return res.status(404).json({success:false,message:'找不到房間'});
   const size=Number(req.body.size);const version=['number','picture','farm'].includes(req.body.version)?req.body.version:room.version;const controlMode='admin';const playMode=['normal','advanced'].includes(req.body.playMode)?req.body.playMode:room.playMode;const targetLines=1;
   if(![25,36,49,64].includes(size))return res.status(400).json({success:false,message:'盤面格數錯誤'});if(version==='picture'&&![25,36].includes(size))return res.status(400).json({success:false,message:'麻將版目前只開放 5×5、6×6'});
-  room.controlMode=controlMode;room.version=version;room.theme=version==='picture'?'mahjong':version==='farm'?'farm':null;room.playMode=playMode;room.size=size;room.targetLines=targetLines;room.timeLimitEnabled=true;room.gameSeconds=Math.max(30,Number(req.body.gameSeconds||90));room.drawIntervalMs=Number(req.body.drawIntervalMs||4000);room.note=String(req.body.note||'').trim();room.maxPlays=Math.max(0,Number(req.body.maxPlays)||0);
+  room.controlMode=controlMode;room.version=version;room.theme=version==='picture'?'mahjong':version==='farm'?'farm':null;room.playMode=playMode;room.size=size;room.targetLines=targetLines;room.timeLimitEnabled=true;room.gameSeconds=Number(req.body.gameSeconds)===0?0:Math.max(60,Number(req.body.gameSeconds||120));room.drawIntervalMs=Number(req.body.drawIntervalMs||4000);room.note=String(req.body.note||'').trim();
   let items=null;if(version==='picture'){const shuffled=MAHJONG_ITEMS.slice().sort(()=>Math.random()-.5);items=playMode==='normal'?shuffled.slice(0,size):MAHJONG_ITEMS.slice();}if(version==='farm'){const poolSize=playMode==='normal'?size:({25:45,36:60,49:75,64:90}[size]||45);items=pickFarmItems(poolSize);}room.items=items;
   io.to(room.id).emit('roomState',{...roomInfo(room),ranking:ranking(room),playerCount:onlinePlayerCount(room)});res.json({success:true,room:roomInfo(room)});
 });
@@ -110,7 +110,7 @@ app.get('/api/game-result/:roomId/:clientId',(req,res)=>{
   const room=rooms.get(String(req.params.roomId||'').trim());
   const player=room?.players.get(String(req.params.clientId||'').trim());
   if(!room||!player)return res.status(404).json({success:false,message:'找不到玩家成績'});
-  res.json({success:true,game:'bingo',roomId:room.id,clientId:player.clientId,name:player.name,gamesPlayed:player.gamesPlayed,successCount:player.successCount||0,maxPlays:room.maxPlays||0,lastCompleted:!!player.lastCompleted,lastCompletionMs:player.lastCompletionMs||0,bestCompletionMs:player.bestCompletionMs||0,prizeClaimCount:player.prizeClaimCount||0});
+  res.json({success:true,game:'bingo',roomId:room.id,clientId:player.clientId,name:player.name,gamesPlayed:player.gamesPlayed,successCount:player.successCount||0,lastCompleted:!!player.lastCompleted,lastCompletionMs:player.lastCompletionMs||0,bestCompletionMs:player.bestCompletionMs||0,prizeClaimCount:player.prizeClaimCount||0});
 });
 app.post('/api/prize/award',(req,res)=>{
   const room=rooms.get(String(req.body.roomId||'').trim());
@@ -144,7 +144,7 @@ function normalizeRunBoard(room,input){
 }
 function shuffleForRun(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a;}
 function publicActiveRun(run){if(!run)return null;return {runId:run.id,startedAt:run.startedAt,endsAt:run.endsAt,size:run.size,version:run.version,playMode:run.playMode,drawIntervalMs:run.drawIntervalMs,boardNumbers:run.boardNumbers||[],drawPool:run.drawPool||[],items:run.items||[]};}
-app.use('/games/bingo', express.static(path.join(__dirname,'public'),{maxAge:'7d',etag:true,immutable:false}));
+app.use('/games/bingo', express.static(path.join(__dirname,'public'),{maxAge:0,etag:true,immutable:false}));
 io.on('connection',socket=>{
   socket.on('watchRoom',({roomId})=>{const room=rooms.get(String(roomId||'').trim());if(!room)return;socket.join(room.id);socket.emit('roomState',{...roomInfo(room),ranking:ranking(room),playerCount:onlinePlayerCount(room)});});
   socket.on('joinRoom',({roomId,name,clientId})=>{
@@ -162,20 +162,20 @@ io.on('connection',socket=>{
     if(!isGameEnabled('bingo'))return socket.emit('runDenied','賓果目前未開放');if(!isActivityCurrent(socket.data.roomId))return socket.emit('runDenied','活動已切換，請返回小遊戲館');if(!isActivityOpen(socket.data.roomId))return socket.emit('runDenied','目前不在活動開放時間');
     const room=rooms.get(socket.data.roomId),player=room?.players.get(socket.data.clientId);if(!room||!player)return;
     if(player.activeRun)return socket.emit('runAuthorized',{...publicActiveRun(player.activeRun),theme:player.activeRun.version==='picture'?'mahjong':player.activeRun.version==='farm'?'farm':null,resumed:true});
-    if(room.maxPlays>0&&(player.successCount||0)>=room.maxPlays)return socket.emit('runDenied','已達可完成次數上限');
+    const completionStatus=getCompletionStatus({activityCode:room.id,gameId:'bingo',playerName:player.name,playerKey:player.name});if(!completionStatus.allowed)return socket.emit('runDenied',`已達每位玩家可完成次數上限（${completionStatus.max} 次）`);
     const version=room.version,size=room.size,playMode=room.playMode,theme=version==='picture'?'mahjong':version==='farm'?'farm':null,startedAt=Date.now();
     const runId=crypto.randomBytes(12).toString('hex'),boardNumbers=normalizeRunBoard(room,payload.boardNumbers),drawPool=shuffleForRun(runSourcePool(room));
-    player.activeRun={id:runId,startedAt,endsAt:startedAt+Math.max(30,Number(room.gameSeconds||90))*1000,size,version,playMode,drawIntervalMs:Number(room.drawIntervalMs||4000),boardNumbers,drawPool,items:Array.isArray(room.items)?room.items.map(x=>({...x})):[]};
+    player.activeRun={id:runId,startedAt,endsAt:Number(room.gameSeconds)>0?startedAt+Number(room.gameSeconds)*1000:null,size,version,playMode,drawIntervalMs:Number(room.drawIntervalMs||4000),boardNumbers,drawPool,items:Array.isArray(room.items)?room.items.map(x=>({...x})):[]};
     room.startCount=(room.startCount||0)+1;await recordPlay({activityCode:room.id,gameId:'bingo',gameName:'賓果',playerName:player.name,playerKey:player.name});
     socket.emit('runAuthorized',{...publicActiveRun(player.activeRun),theme,resumed:false});io.to(room.id).emit('roomStatsUpdate',{startCount:room.startCount,finishCount:room.finishCount||0});emitRanking(room);
   });
   socket.on('submitRun',async data=>{
     if(!isActivityCurrent(socket.data.roomId))return socket.emit('runDenied','活動已切換，本局不再發獎');const room=rooms.get(socket.data.roomId),player=room?.players.get(socket.data.clientId);if(!room||!player||!player.activeRun||player.activeRun.id!==data?.runId)return;
-    const active=player.activeRun,lines=Math.max(0,Number(data.bingoLines)||0),elapsedMs=Math.max(0,Date.now()-active.startedAt),completed=lines>=1&&Date.now()<=Number(active.endsAt||0)+1200;
+    const active=player.activeRun,lines=Math.max(0,Number(data.bingoLines)||0),elapsedMs=Math.max(0,Date.now()-active.startedAt),completed=lines>=1&&(!active.endsAt||Date.now()<=Number(active.endsAt)+1200);
     player.gamesPlayed+=1;if(completed){player.successCount=(player.successCount||0)+1;player.lastCompletionMs=elapsedMs;player.bestCompletionMs=!player.bestCompletionMs?elapsedMs:Math.min(player.bestCompletionMs,elapsedMs);}else player.lastCompletionMs=0;
     player.lastCompleted=completed;player.lastSubmitAt=Date.now();player.activeRun=null;if(completed)room.finishCount=(room.finishCount||0)+1;
-    socket.emit('runSaved',{gamesPlayed:player.gamesPlayed,completed,maxPlays:room.maxPlays||0,completionMs:completed?elapsedMs:0,bestCompletionMs:player.bestCompletionMs||0,successCount:player.successCount||0,prizeClaimCount:player.prizeClaimCount||0});
-    if(completed){const prize=await awardPrize({gameId:'bingo',game:'賓果',playerName:player.name,playerKey:player.name,gameRef:room.id});player.prizeClaimCount=Number(prize.prizeClaimCount||player.prizeClaimCount||0);socket.emit('prizeResult',prize);}
+    socket.emit('runSaved',{gamesPlayed:player.gamesPlayed,completed,completionMs:completed?elapsedMs:0,bestCompletionMs:player.bestCompletionMs||0,successCount:player.successCount||0,prizeClaimCount:player.prizeClaimCount||0,completionStatus:getCompletionStatus({activityCode:room.id,gameId:'bingo',playerName:player.name,playerKey:player.name})});
+    if(completed){await recordCompletion({activityCode:room.id,gameId:'bingo',gameName:'賓果',playerName:player.name,playerKey:player.name,elapsedMs,completedAt:Date.now(),runKey:active.id});const prize=await awardPrize({activityCode:room.id,gameId:'bingo',game:'賓果',playerName:player.name,playerKey:player.name,gameRef:room.id});player.prizeClaimCount=Number(prize.prizeClaimCount||player.prizeClaimCount||0);socket.emit('prizeResult',prize);}
     io.to(room.id).emit('roomStatsUpdate',{startCount:room.startCount||0,finishCount:room.finishCount||0});emitRanking(room);
   });
   socket.on('disconnect',()=>{const room=rooms.get(socket.data.roomId);if(room){const p=room.players.get(socket.data.clientId);if(p&&p.socketId===socket.id)p.socketId=null;emitPlayerCount(room);}});
