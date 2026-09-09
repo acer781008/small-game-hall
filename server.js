@@ -144,7 +144,7 @@ async function main(){
   app.use(express.static(path.join(__dirname,'public'),{setHeaders(res,file){if(/\.(?:html|js|css)$/i.test(file))res.setHeader('Cache-Control','no-cache, must-revalidate');}}));
 
   server.listen(PORT,'0.0.0.0',()=>{
-    console.log(`小遊戲館 V1.5.3：http://localhost:${PORT} 目前活動碼 ${currentCode()}`);
+    console.log(`小遊戲館 V1.5.4：http://localhost:${PORT} 目前活動碼 ${currentCode()}`);
     console.log(`資料保存模式：${adapter.persistent?'PostgreSQL 永久資料庫':'本機 JSON（僅供測試）'}`);
   });
 

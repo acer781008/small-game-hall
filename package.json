@@ -1,6 +1,6 @@
 {
   "name": "small-game-hall-test",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "private": true,
   "main": "server.js",
   "scripts": {
@@ -14,5 +14,5 @@
     "socket.io": "^4.8.1",
     "pg": "^8.13.1"
   },
-  "description": "小遊戲館 V1.5.2｜連連看與拼圖卡片統一風格"
+  "description": "小遊戲館 V1.5.4｜翻牌重連、賓果圖片 fallback、連連看手機版優化"
 }
