@@ -2,7 +2,7 @@ const express = require("express");
 const path = require("path");
 const crypto = require("crypto");
 
-module.exports = function initBingo({app, io, isAdmin, awardPrize, isGameEnabled=()=>true, isActivityCurrent=()=>true, isActivityOpen=()=>true}) {
+module.exports = function initBingo({app, io, isAdmin, awardPrize, recordPlay=async()=>({status:'skipped'}), isGameEnabled=()=>true, isActivityCurrent=()=>true, isActivityOpen=()=>true}) {
 const rooms = new Map();
 const timers = new Map();
 function generateRoomId(){let id;do{id=String(Math.floor(100000+Math.random()*900000));}while(rooms.has(id));return id;}
@@ -131,12 +131,53 @@ app.post('/api/prize/award',(req,res)=>{
   res.json({success:true,player:{clientId:player.clientId,name:player.name},result});
 });
 
+function runSourcePool(room){
+  if(room.version==='farm'||room.version==='picture')return (room.items||[]).map(x=>x.id);
+  const max=room.playMode==='normal'?room.size:({25:50,36:60,49:75,64:90}[room.size]||room.size);
+  return Array.from({length:max},(_,i)=>i+1);
+}
+function normalizeRunBoard(room,input){
+  const pool=runSourcePool(room),allowed=new Set(pool.map(String)),seen=new Set(),out=[];
+  for(const v of Array.isArray(input)?input:[]){const k=String(v);if(!allowed.has(k)||seen.has(k))continue;seen.add(k);out.push(pool.find(x=>String(x)===k));if(out.length>=room.size)break;}
+  if(out.length===room.size)return out;
+  return shuffleForRun(pool).slice(0,room.size);
+}
+function shuffleForRun(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a;}
+function publicActiveRun(run){if(!run)return null;return {runId:run.id,startedAt:run.startedAt,endsAt:run.endsAt,size:run.size,version:run.version,playMode:run.playMode,drawIntervalMs:run.drawIntervalMs,boardNumbers:run.boardNumbers||[],drawPool:run.drawPool||[],items:run.items||[]};}
 app.use('/games/bingo', express.static(path.join(__dirname,'public'),{maxAge:'7d',etag:true,immutable:false}));
 io.on('connection',socket=>{
   socket.on('watchRoom',({roomId})=>{const room=rooms.get(String(roomId||'').trim());if(!room)return;socket.join(room.id);socket.emit('roomState',{...roomInfo(room),ranking:ranking(room),playerCount:onlinePlayerCount(room)});});
-  socket.on('joinRoom',({roomId,name,clientId})=>{if(!isGameEnabled('bingo'))return socket.emit('joinError','賓果目前未開放');if(!isActivityCurrent(roomId))return socket.emit('joinError','這個活動碼已失效');const room=rooms.get(String(roomId||'').trim());const cleanName=String(name||'').trim(),cleanClientId=String(clientId||'').trim();if(!room)return socket.emit('joinError','找不到這個房間');if(!cleanName)return socket.emit('joinError','請輸入玩家名稱');if(!cleanClientId)return socket.emit('joinError','玩家識別資料遺失');for(const [id,p] of room.players.entries())if(id!==cleanClientId&&p.name===cleanName)return socket.emit('joinError','這個玩家名稱已有人使用');const player=room.players.get(cleanClientId)||{clientId:cleanClientId,name:cleanName,gamesPlayed:0,lastSubmitAt:0,successCount:0,activeRun:null,latestPrize:null,lastCompleted:false,lastCompletionMs:0,bestCompletionMs:0,prizeClaimCount:0};player.name=cleanName;player.socketId=socket.id;room.players.set(cleanClientId,player);socket.data.roomId=room.id;socket.data.clientId=cleanClientId;socket.join(room.id);socket.emit('joinSuccess',{...roomInfo(room),name:player.name,gamesPlayed:player.gamesPlayed,successCount:player.successCount||0,bestCompletionMs:player.bestCompletionMs||0,prizeClaimCount:player.prizeClaimCount||0,latestPrize:player.latestPrize||null});emitPlayerCount(room);emitRanking(room);});
-  socket.on('beginRun',()=>{if(!isGameEnabled('bingo'))return socket.emit('runDenied','賓果目前未開放');if(!isActivityCurrent(socket.data.roomId))return socket.emit('runDenied','活動已切換，請返回小遊戲館');if(!isActivityOpen(socket.data.roomId))return socket.emit('runDenied','目前不在活動開放時間');const room=rooms.get(socket.data.roomId),player=room?.players.get(socket.data.clientId);if(!room||!player)return;if(player.activeRun)return socket.emit('runDenied','目前已有一局進行中');if(room.maxPlays>0&&player.gamesPlayed>=room.maxPlays)return socket.emit('runDenied','已達可玩次數上限');let version=room.version,size=room.size,playMode=room.playMode;const theme=version==='picture'?'mahjong':version==='farm'?'farm':null;let items=null;if(version==='picture'){const shuffled=MAHJONG_ITEMS.slice().sort(()=>Math.random()-.5);items=playMode==='normal'?shuffled.slice(0,size):MAHJONG_ITEMS.slice();}if(version==='farm'){const poolSize=playMode==='normal'?size:({25:45,36:60,49:75,64:90}[size]||45);items=pickFarmItems(poolSize);}const runId=crypto.randomBytes(12).toString('hex');player.activeRun={id:runId,startedAt:Date.now(),size,version,playMode};room.startCount=(room.startCount||0)+1;socket.emit('runAuthorized',{runId,startedAt:player.activeRun.startedAt,size,version,playMode,theme,items});io.to(room.id).emit('roomStatsUpdate',{startCount:room.startCount,finishCount:room.finishCount||0});emitRanking(room);});
-  socket.on('submitRun',async data=>{if(!isActivityCurrent(socket.data.roomId))return socket.emit('runDenied','活動已切換，本局不再發獎');const room=rooms.get(socket.data.roomId),player=room?.players.get(socket.data.clientId);if(!room||!player||!player.activeRun||player.activeRun.id!==data?.runId)return;const lines=Math.max(0,Number(data.bingoLines)||0);const elapsedMs=Math.max(0,Date.now()-player.activeRun.startedAt);const completed=lines>=1&&elapsedMs<=Math.max(30,Number(room.gameSeconds||90))*1000;player.gamesPlayed+=1;if(completed){player.successCount=(player.successCount||0)+1;player.lastCompletionMs=elapsedMs;player.bestCompletionMs=!player.bestCompletionMs?elapsedMs:Math.min(player.bestCompletionMs,elapsedMs);}else player.lastCompletionMs=0;player.lastCompleted=completed;player.lastSubmitAt=Date.now();player.activeRun=null;if(completed)room.finishCount=(room.finishCount||0)+1;socket.emit('runSaved',{gamesPlayed:player.gamesPlayed,completed,maxPlays:room.maxPlays||0,completionMs:completed?elapsedMs:0,bestCompletionMs:player.bestCompletionMs||0,successCount:player.successCount||0,prizeClaimCount:player.prizeClaimCount||0});if(completed){const prize=await awardPrize({game:'賓果',playerName:player.name,playerKey:player.name,gameRef:room.id});player.prizeClaimCount=Number(prize.prizeClaimCount||player.prizeClaimCount||0);socket.emit('prizeResult',prize);}io.to(room.id).emit('roomStatsUpdate',{startCount:room.startCount||0,finishCount:room.finishCount||0});emitRanking(room);});
+  socket.on('joinRoom',({roomId,name,clientId})=>{
+    if(!isGameEnabled('bingo'))return socket.emit('joinError','賓果目前未開放');
+    if(!isActivityCurrent(roomId))return socket.emit('joinError','這個活動碼已失效');
+    const room=rooms.get(String(roomId||'').trim()),cleanName=String(name||'').trim(),cleanClientId=String(clientId||'').trim();
+    if(!room)return socket.emit('joinError','找不到這個房間');if(!cleanName)return socket.emit('joinError','請輸入玩家名稱');if(!cleanClientId)return socket.emit('joinError','玩家識別資料遺失');
+    for(const [id,p] of room.players.entries())if(id!==cleanClientId&&p.name===cleanName)return socket.emit('joinError','這個玩家名稱已有人使用');
+    const player=room.players.get(cleanClientId)||{clientId:cleanClientId,name:cleanName,gamesPlayed:0,lastSubmitAt:0,successCount:0,activeRun:null,latestPrize:null,lastCompleted:false,lastCompletionMs:0,bestCompletionMs:0,prizeClaimCount:0};
+    player.name=cleanName;player.socketId=socket.id;room.players.set(cleanClientId,player);socket.data.roomId=room.id;socket.data.clientId=cleanClientId;socket.join(room.id);
+    socket.emit('joinSuccess',{...roomInfo(room),name:player.name,gamesPlayed:player.gamesPlayed,successCount:player.successCount||0,bestCompletionMs:player.bestCompletionMs||0,prizeClaimCount:player.prizeClaimCount||0,latestPrize:player.latestPrize||null,activeRun:publicActiveRun(player.activeRun)});
+    emitPlayerCount(room);emitRanking(room);
+  });
+  socket.on('beginRun',async(payload={})=>{
+    if(!isGameEnabled('bingo'))return socket.emit('runDenied','賓果目前未開放');if(!isActivityCurrent(socket.data.roomId))return socket.emit('runDenied','活動已切換，請返回小遊戲館');if(!isActivityOpen(socket.data.roomId))return socket.emit('runDenied','目前不在活動開放時間');
+    const room=rooms.get(socket.data.roomId),player=room?.players.get(socket.data.clientId);if(!room||!player)return;
+    if(player.activeRun)return socket.emit('runAuthorized',{...publicActiveRun(player.activeRun),theme:player.activeRun.version==='picture'?'mahjong':player.activeRun.version==='farm'?'farm':null,resumed:true});
+    if(room.maxPlays>0&&(player.successCount||0)>=room.maxPlays)return socket.emit('runDenied','已達可完成次數上限');
+    const version=room.version,size=room.size,playMode=room.playMode,theme=version==='picture'?'mahjong':version==='farm'?'farm':null,startedAt=Date.now();
+    const runId=crypto.randomBytes(12).toString('hex'),boardNumbers=normalizeRunBoard(room,payload.boardNumbers),drawPool=shuffleForRun(runSourcePool(room));
+    player.activeRun={id:runId,startedAt,endsAt:startedAt+Math.max(30,Number(room.gameSeconds||90))*1000,size,version,playMode,drawIntervalMs:Number(room.drawIntervalMs||4000),boardNumbers,drawPool,items:Array.isArray(room.items)?room.items.map(x=>({...x})):[]};
+    room.startCount=(room.startCount||0)+1;await recordPlay({activityCode:room.id,gameId:'bingo',gameName:'賓果',playerName:player.name,playerKey:player.name});
+    socket.emit('runAuthorized',{...publicActiveRun(player.activeRun),theme,resumed:false});io.to(room.id).emit('roomStatsUpdate',{startCount:room.startCount,finishCount:room.finishCount||0});emitRanking(room);
+  });
+  socket.on('submitRun',async data=>{
+    if(!isActivityCurrent(socket.data.roomId))return socket.emit('runDenied','活動已切換，本局不再發獎');const room=rooms.get(socket.data.roomId),player=room?.players.get(socket.data.clientId);if(!room||!player||!player.activeRun||player.activeRun.id!==data?.runId)return;
+    const active=player.activeRun,lines=Math.max(0,Number(data.bingoLines)||0),elapsedMs=Math.max(0,Date.now()-active.startedAt),completed=lines>=1&&Date.now()<=Number(active.endsAt||0)+1200;
+    player.gamesPlayed+=1;if(completed){player.successCount=(player.successCount||0)+1;player.lastCompletionMs=elapsedMs;player.bestCompletionMs=!player.bestCompletionMs?elapsedMs:Math.min(player.bestCompletionMs,elapsedMs);}else player.lastCompletionMs=0;
+    player.lastCompleted=completed;player.lastSubmitAt=Date.now();player.activeRun=null;if(completed)room.finishCount=(room.finishCount||0)+1;
+    socket.emit('runSaved',{gamesPlayed:player.gamesPlayed,completed,maxPlays:room.maxPlays||0,completionMs:completed?elapsedMs:0,bestCompletionMs:player.bestCompletionMs||0,successCount:player.successCount||0,prizeClaimCount:player.prizeClaimCount||0});
+    if(completed){const prize=await awardPrize({gameId:'bingo',game:'賓果',playerName:player.name,playerKey:player.name,gameRef:room.id});player.prizeClaimCount=Number(prize.prizeClaimCount||player.prizeClaimCount||0);socket.emit('prizeResult',prize);}
+    io.to(room.id).emit('roomStatsUpdate',{startCount:room.startCount||0,finishCount:room.finishCount||0});emitRanking(room);
+  });
   socket.on('disconnect',()=>{const room=rooms.get(socket.data.roomId);if(room){const p=room.players.get(socket.data.clientId);if(p&&p.socketId===socket.id)p.socketId=null;emitPlayerCount(room);}});
 });
 return {rooms,ensureRoom,getSettings:hallGetSettings,setSettings:hallSetSettings};

@@ -19,6 +19,7 @@ const createStateAdapter=require('./lib/state-adapter');
 const createActivityStore=require('./lib/activity-store');
 const createPrizeStore=require('./lib/prize-store');
 const createGameSettingsStore=require('./lib/game-settings-store');
+const createParticipationStore=require('./lib/participation-store');
 
 async function main(){
   const app=express();
@@ -32,6 +33,7 @@ async function main(){
   const activities=await createActivityStore({adapter,file:path.join(__dirname,'data','activities.json')});
   const prizes=await createPrizeStore({adapter,file:path.join(__dirname,'data','store.json'),getCurrentActivityCode:()=>activities.currentCode()});
   const gameSettings=await createGameSettingsStore({adapter,file:path.join(__dirname,'data','game-settings.json')});
+  const participation=await createParticipationStore({adapter,file:path.join(__dirname,'data','participation.json'),getCurrentActivityCode:()=>activities.currentCode()});
 
   function verifyPassword(password){
     if(!ADMIN_PASSWORD)return false;
@@ -51,6 +53,11 @@ async function main(){
     if(!activityOpen(payload?.activityCode||currentCode()))return {status:'activity_closed'};
     try{return await prizes.award({...payload,activityCode:currentCode()});}
     catch(e){console.error('awardPrize storage error:',e);return {status:'storage_error',message:'獎品資料保存失敗，請洽主控'};}
+  }
+  async function recordPlay(payload){
+    if(!activityOpen(payload?.activityCode||currentCode()))return {status:'activity_closed'};
+    try{return {status:'recorded',...(await participation.record({...payload,activityCode:payload?.activityCode||currentCode()}))};}
+    catch(e){console.error('participation storage error:',e);return {status:'storage_error'};}
   }
 
   app.post('/api/admin/login',(req,res)=>{
@@ -76,10 +83,10 @@ async function main(){
   app.use('/games/memory',guardEntry('memory','/player.html'));
   app.use('/games/shelf',guardEntry('shelf','/player.html'));
 
-  const bingo=require('./games/bingo/backend')({app,io,isAdmin,awardPrize,isGameEnabled:gameEnabled,isActivityCurrent:code=>activities.isCurrent(code),isActivityOpen:code=>activities.isOpen(code)});
-  const sudoku=require('./games/sudoku/backend')({app,io,isAdmin,awardPrize,isGameEnabled:gameEnabled,getActivityCode:currentCode,isActivityOpen:code=>activities.isOpen(code)});
-  const memory=require('./games/memory/backend')({app,io,isAdmin,awardPrize,isGameEnabled:gameEnabled,getActivityCode:currentCode,isActivityOpen:code=>activities.isOpen(code)});
-  const shelf=require('./games/shelf/backend')({app,io,isAdmin,awardPrize,isGameEnabled:gameEnabled,getActivityCode:currentCode,isActivityOpen:code=>activities.isOpen(code)});
+  const bingo=require('./games/bingo/backend')({app,io,isAdmin,awardPrize,recordPlay,isGameEnabled:gameEnabled,isActivityCurrent:code=>activities.isCurrent(code),isActivityOpen:code=>activities.isOpen(code)});
+  const sudoku=require('./games/sudoku/backend')({app,io,isAdmin,awardPrize,recordPlay,isGameEnabled:gameEnabled,getActivityCode:currentCode,isActivityOpen:code=>activities.isOpen(code)});
+  const memory=require('./games/memory/backend')({app,io,isAdmin,awardPrize,recordPlay,isGameEnabled:gameEnabled,getActivityCode:currentCode,isActivityOpen:code=>activities.isOpen(code)});
+  const shelf=require('./games/shelf/backend')({app,io,isAdmin,awardPrize,recordPlay,isGameEnabled:gameEnabled,getActivityCode:currentCode,isActivityOpen:code=>activities.isOpen(code)});
   const modules={bingo,sudoku,memory,shelf};
 
   function moduleGetSettings(id){const mod=modules[id];return id==='bingo'?mod.getSettings(currentCode()):mod.getSettings();}
@@ -108,16 +115,18 @@ async function main(){
   app.put('/api/game-settings/:id',needAdmin,async(req,res)=>{try{const id=req.params.id,mod=modules[id];if(!mod?.setSettings)return res.status(404).json({ok:false,message:'找不到遊戲'});const settings=moduleSetSettings(id,req.body||{});await gameSettings.set(id,settings);res.json({ok:true,settings});}catch(e){res.status(400).json({ok:false,message:e.message});}});
 
   app.get('/api/prizes',needAdmin,(req,res)=>res.json({ok:true,...prizes.state(currentCode())}));
-  app.post('/api/prizes',needAdmin,async(req,res)=>{try{res.json({ok:true,prize:await prizes.addPrize(req.body.name,req.body.quantity,currentCode())});}catch(e){res.status(400).json({ok:false,message:e.message});}});
+  app.get('/api/public/prizes',(req,res)=>{const code=String(req.query.activity||currentCode());if(code!==currentCode())return res.status(404).json({ok:false,message:'活動碼已失效'});res.json({ok:true,...prizes.publicState(code)});});
+  app.post('/api/prizes',needAdmin,async(req,res)=>{try{res.json({ok:true,prize:await prizes.addPrize(req.body.name,req.body.quantity,currentCode(),req.body.games)});}catch(e){res.status(400).json({ok:false,message:e.message});}});
   app.put('/api/prizes/:id',needAdmin,async(req,res)=>{try{res.json({ok:true,prize:await prizes.updatePrize(req.params.id,req.body,currentCode())});}catch(e){res.status(400).json({ok:false,message:e.message});}});
   app.delete('/api/prizes/:id',needAdmin,async(req,res)=>{try{await prizes.removePrize(req.params.id,currentCode());res.json({ok:true});}catch(e){res.status(404).json({ok:false,message:e.message});}});
-  app.put('/api/prize-settings',needAdmin,async(req,res)=>{try{res.json({ok:true,...await prizes.setMaxClaims(req.body.maxClaimsPerPlayer,currentCode())});}catch(e){res.status(400).json({ok:false,message:e.message});}});
+  app.put('/api/prize-settings',needAdmin,async(req,res)=>{try{res.json({ok:true,...await prizes.setSettings(req.body||{},currentCode())});}catch(e){res.status(400).json({ok:false,message:e.message});}});
   app.get('/api/prize-records',needAdmin,(req,res)=>res.json({ok:true,activityCode:currentCode(),records:prizes.state(currentCode()).records}));
+  app.get('/api/participation',needAdmin,(req,res)=>{const code=String(req.query.activity||currentCode());res.json({ok:true,...participation.state(code)});});
 
   app.use(express.static(path.join(__dirname,'public')));
 
   server.listen(PORT,'0.0.0.0',()=>{
-    console.log(`小遊戲館 V1.0：http://localhost:${PORT} 目前活動碼 ${currentCode()}`);
+    console.log(`小遊戲館 V1.4：http://localhost:${PORT} 目前活動碼 ${currentCode()}`);
     console.log(`資料保存模式：${adapter.persistent?'PostgreSQL 永久資料庫':'本機 JSON（僅供測試）'}`);
   });
 
