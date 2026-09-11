@@ -27,8 +27,8 @@ async function main(){
   const server=http.createServer(app);
   const io=new Server(server);
   const PORT=process.env.PORT||3000;
-  const sessions=new Set();
   const ADMIN_PASSWORD=String(process.env.ADMIN_PASSWORD||'');
+  const ADMIN_SESSION_MS=7*24*60*60*1000;
 
   const adapter=await createStateAdapter({databaseUrl:process.env.DATABASE_URL||''});
   const activities=await createActivityStore({adapter,file:path.join(__dirname,'data','activities.json')});
@@ -42,11 +42,13 @@ async function main(){
     const a=Buffer.from(String(password||'')),b=Buffer.from(ADMIN_PASSWORD);
     return a.length===b.length&&crypto.timingSafeEqual(a,b);
   }
-  function createAdminSession(res){const t=crypto.randomBytes(24).toString('hex');sessions.add(t);res.setHeader('Set-Cookie',`admin_session=${t}; HttpOnly; Path=/; SameSite=Lax`);return t;}
+  function adminSignature(exp){return crypto.createHmac('sha256',ADMIN_PASSWORD).update(`admin|${exp}`).digest('hex');}
+  function createAdminSession(res){const exp=Date.now()+ADMIN_SESSION_MS,t=`${exp}.${adminSignature(exp)}`;res.setHeader('Set-Cookie',`admin_session=${t}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${Math.floor(ADMIN_SESSION_MS/1000)}`);return t;}
+  function validAdminSession(t){if(!ADMIN_PASSWORD||!t)return false;const [expRaw,sig]=String(t).split('.');const exp=Number(expRaw);if(!Number.isFinite(exp)||exp<Date.now()||!sig)return false;const expected=adminSignature(exp),a=Buffer.from(sig),b=Buffer.from(expected);return a.length===b.length&&crypto.timingSafeEqual(a,b);}
 
   app.use(express.json({limit:'500kb'}));
   function cookies(req){const out={};String(req.headers.cookie||'').split(';').forEach(x=>{const i=x.indexOf('=');if(i>0)out[x.slice(0,i).trim()]=x.slice(i+1).trim()});return out;}
-  function isAdmin(req){const t=cookies(req).admin_session;return !!t&&sessions.has(t);}
+  function isAdmin(req){return validAdminSession(cookies(req).admin_session);}
   function needAdmin(req,res,next){if(!isAdmin(req))return res.status(401).json({ok:false,success:false,message:'請先登入主控'});next();}
   function gameEnabled(id){return activities.isGameEnabled(id);}
   function currentCode(){return activities.currentCode();}
@@ -78,7 +80,7 @@ async function main(){
     createAdminSession(res);res.json({ok:true,success:true});
   });
   app.get('/api/admin/status',(req,res)=>res.json({ok:isAdmin(req)}));
-  app.post('/api/admin/logout',(req,res)=>{const t=cookies(req).admin_session;if(t)sessions.delete(t);res.setHeader('Set-Cookie','admin_session=; Max-Age=0; Path=/');res.json({ok:true});});
+  app.post('/api/admin/logout',(req,res)=>{res.setHeader('Set-Cookie','admin_session=; Max-Age=0; Path=/; SameSite=Lax');res.json({ok:true});});
   app.get('/api/storage-status',needAdmin,(req,res)=>res.json({ok:true,persistent:adapter.persistent,mode:adapter.mode}));
 
   app.get('/admin.html',(req,res)=>isAdmin(req)?res.sendFile(path.join(__dirname,'public','admin.html')):res.redirect('/admin-login.html'));
@@ -136,15 +138,19 @@ async function main(){
   app.post('/api/prizes',needAdmin,async(req,res)=>{try{res.json({ok:true,prize:await prizes.addPrize(req.body.name,req.body.quantity,currentCode(),req.body.games)});}catch(e){res.status(400).json({ok:false,message:e.message});}});
   app.put('/api/prizes/:id',needAdmin,async(req,res)=>{try{res.json({ok:true,prize:await prizes.updatePrize(req.params.id,req.body,currentCode())});}catch(e){res.status(400).json({ok:false,message:e.message});}});
   app.delete('/api/prizes/:id',needAdmin,async(req,res)=>{try{await prizes.removePrize(req.params.id,currentCode());res.json({ok:true});}catch(e){res.status(404).json({ok:false,message:e.message});}});
+  app.post('/api/c-prizes',needAdmin,async(req,res)=>{try{res.json({ok:true,prize:await prizes.addCPrize(req.body.name,req.body.quantity,req.body.tier,currentCode(),req.body.gameId)});}catch(e){res.status(400).json({ok:false,message:e.message});}});
+  app.put('/api/c-prizes/:id',needAdmin,async(req,res)=>{try{res.json({ok:true,prize:await prizes.updateCPrize(req.params.id,req.body,currentCode())});}catch(e){res.status(400).json({ok:false,message:e.message});}});
+  app.delete('/api/c-prizes/:id',needAdmin,async(req,res)=>{try{await prizes.removeCPrize(req.params.id,currentCode());res.json({ok:true});}catch(e){res.status(404).json({ok:false,message:e.message});}});
   app.put('/api/prize-settings',needAdmin,async(req,res)=>{try{res.json({ok:true,...await prizes.setSettings(req.body||{},currentCode())});}catch(e){res.status(400).json({ok:false,message:e.message});}});
   app.get('/api/prize-records',needAdmin,(req,res)=>res.json({ok:true,activityCode:currentCode(),records:prizes.state(currentCode()).records}));
+  app.get('/api/c-prize-records',needAdmin,(req,res)=>res.json({ok:true,activityCode:currentCode(),records:prizes.state(currentCode()).cRecords}));
   app.get('/api/public/leaderboard/:gameId',(req,res)=>{const code=String(req.query.activity||currentCode()),gameId=String(req.params.gameId||'');if(code!==currentCode())return res.status(404).json({ok:false,message:'活動碼已失效'});res.set('Cache-Control','no-store');res.json({ok:true,...completions.leaderboard(code,gameId,100)});});
   app.get('/api/participation',needAdmin,(req,res)=>{const code=String(req.query.activity||currentCode()),base=participation.state(code),crows=completions.allPlayerStats(code),map=new Map(crows.map(x=>[`${x.gameId}|${x.player.toLocaleLowerCase()}`,x]));const records=(base.records||[]).map(r=>{const c=map.get(`${r.gameId}|${String(r.player||'').toLocaleLowerCase()}`)||{};return {...r,completions:Number(c.completions)||0,bestElapsedMs:Number(c.bestElapsedMs)||0}});res.json({ok:true,...base,records});});
 
   app.use(express.static(path.join(__dirname,'public'),{setHeaders(res,file){if(/\.(?:html|js|css)$/i.test(file))res.setHeader('Cache-Control','no-cache, must-revalidate');}}));
 
   server.listen(PORT,'0.0.0.0',()=>{
-    console.log(`小遊戲館 V1.5.4：http://localhost:${PORT} 目前活動碼 ${currentCode()}`);
+    console.log(`小遊戲館 V1.6 測試修正版 beta.3：http://localhost:${PORT} 目前活動碼 ${currentCode()}`);
     console.log(`資料保存模式：${adapter.persistent?'PostgreSQL 永久資料庫':'本機 JSON（僅供測試）'}`);
   });
 

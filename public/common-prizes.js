@@ -46,7 +46,7 @@
     bar.querySelector('#cPrizeCurrent').innerHTML=`<span>目前</span><b>${esc(label)} → ${esc(t)}</b>`;
   }
   function paintModal(){
-    ensure();const all=Array.isArray(data?.cPrizes)?data.cPrizes:[];
+    ensure();const all=(Array.isArray(data?.cPrizes)?data.cPrizes:[]).filter(p=>String(p.gameId||'')===gameId);
     modal.querySelector('#cPrizeModalBody').innerHTML=['C1','C2','C3'].map(t=>{const rows=all.filter(p=>String(p.tier).toUpperCase()===t),total=rows.reduce((s,p)=>s+Math.max(0,Number(p.quantity)||0),0);return `<section class="c-prize-tier ${currentTier===t?'active':''}"><div class="c-prize-head"><span>${t}・${esc(tierLabel(t))}</span><small>共剩 ${total}</small></div>${rows.length?rows.map(p=>`<div class="c-prize-row ${Number(p.quantity)<=0?'soldout':''}"><span>${esc(p.name)}</span><b>${Number(p.quantity)>0?'剩 '+Number(p.quantity):'已領完'}</b></div>`).join(''):'<div class="c-prize-empty">尚未設定獎品</div>'}</section>`}).join('');
   }
   async function refresh(){
