@@ -33,8 +33,11 @@ function fmt(sec){
 }
 function themeName(v){return {fruit:'水果',pet:'寵物',dessert:'甜點',mixed:'混合'}[v]||v}
 async function loadSettings(){
-  const r=await fetch('/games/lianliankan/api/settings',{cache:'no-store'});const data=await r.json();settings=data.settings;const t=Number(settings.timeMinutes)>0?`${settings.timeMinutes} 分鐘`:'不限時間';$('settingSummary').textContent=`${themeName(settings.theme)}系列｜${DIFFICULTY[settings.difficulty].label}｜手動洗牌 ${settings.shuffleLimit} 次｜${t}`;
+  const r=await fetch('/games/lianliankan/api/settings',{cache:'no-store'});const data=await r.json();settings=data.settings;const t=Number(settings.timeMinutes)>0?`${settings.timeMinutes} 分鐘`:'不限時間';const box=$('choiceBox');if(settings.selfSelect){box.classList.remove('hidden');$('playerTheme').innerHTML=(settings.allowedThemes||[]).map(v=>`<option value="${v}">${themeName(v)}系列</option>`).join('');$('playerDifficulty').innerHTML=(settings.allowedDifficulties||[]).map(v=>`<option value="${v}">${DIFFICULTY[v].label}</option>`).join('');$('settingSummary').textContent=`玩家自選｜手動洗牌 ${settings.shuffleLimit} 次｜${t}`;updateTier()}else{box.classList.add('hidden');$('settingSummary').textContent=`${themeName(settings.theme)}系列｜${DIFFICULTY[settings.difficulty].label}｜手動洗牌 ${settings.shuffleLimit} 次｜${t}`;updateTier()}
 }
+
+function updateTier(){if(!settings)return;const d=settings.selfSelect?($('playerDifficulty')?.value||settings.difficulty):settings.difficulty;window.setPrizeTier?.(settings.tierByDifficulty?.[d]||({easy:'C1',normal:'C2',hard:'C3'})[d]||'C1',({easy:'簡單',normal:'普通',hard:'困難'})[d]||d)}
+$('playerTheme')?.addEventListener('change',updateTier);$('playerDifficulty')?.addEventListener('change',updateTier);
 function showEntry(text,ok=false){
   $('entryMsg').textContent=text;
   $('entryMsg').classList.remove('hidden');
@@ -43,7 +46,7 @@ function showEntry(text,ok=false){
 }
 async function startGame(){
   await loadSettings();
-  playerName=$('playerName').value.trim();if(!playerName){showEntry('請先輸入玩家名稱');return}localStorage.setItem(`llkName:${activity}`,playerName);let auth;try{const rr=await fetch('/games/lianliankan/api/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({activity,player:playerName})}),dd=await rr.json();if(!rr.ok)throw new Error(dd.message||'無法開始');auth=dd;settings=auth.settings||settings;runId=auth.runId}catch(e){showEntry(e.message);return}
+  playerName=$('playerName').value.trim();if(!playerName){showEntry('請先輸入玩家名稱');return}localStorage.setItem(`llkName:${activity}`,playerName);let auth;try{const rr=await fetch('/games/lianliankan/api/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({activity,player:playerName,theme:settings.selfSelect?$('playerTheme').value:settings.theme,difficulty:settings.selfSelect?$('playerDifficulty').value:settings.difficulty})}),dd=await rr.json();if(!rr.ok)throw new Error(dd.message||'無法開始');auth=dd;settings=auth.settings||settings;runId=auth.runId;window.setPrizeTier?.(auth.tier||settings.tierByDifficulty?.[settings.difficulty]||'C1',({easy:'簡單',normal:'普通',hard:'困難'})[auth.difficulty||settings.difficulty]||auth.difficulty||settings.difficulty);window.setPrizeInfoVisible?.(false)}catch(e){showEntry(e.message);return}
 
   $('entryCard').classList.add('hidden');
   $('gameCard').classList.remove('hidden');
@@ -244,13 +247,13 @@ async function complete(){
   running=false;locked=true;clearInterval(timerId);updateShuffleUI();
   const elapsed=Math.floor((Date.now()-startedAt)/1000);if(!deadline)$('time').textContent=fmt(elapsed);
   $('message').textContent='全部消除完成！🎉';
-  try{const result=await sendFinish(true);clearState();$('finishText').textContent=`實際完成時間：${fmt(result.elapsedMs/1000)}`;$('finishPrize').textContent=prizeText(result.prize);window.refreshHallLeaderboard?.();setTimeout(()=>$('finishModal').classList.remove('hidden'),160)}catch(e){showEntry(e.message)}
+  try{const result=await sendFinish(true);clearState();$('finishText').textContent=`實際完成時間：${fmt(result.elapsedMs/1000)}`;$('finishPrize').textContent=prizeText(result.prize);window.refreshHallLeaderboard?.();setTimeout(()=>{window.setPrizeInfoVisible?.(true);$('finishModal').classList.remove('hidden')},160)}catch(e){showEntry(e.message)}
 }
 async function timeout(){
   if(!running)return;
   running=false;locked=true;clearInterval(timerId);$('time').textContent='00:00';updateShuffleUI();
   $('message').textContent='時間到！這局還沒完成。';
-  try{await sendFinish(false);clearState()}catch{}$('timeoutModal').classList.remove('hidden');
+  try{await sendFinish(false);clearState()}catch{}window.setPrizeInfoVisible?.(true);$('timeoutModal').classList.remove('hidden');
 }
 function backToEntry(){
   running=false;locked=false;clearInterval(timerId);hideLine();
