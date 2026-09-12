@@ -14,13 +14,14 @@
     memory:{C1:'4×4',C2:'6×6',C3:'8×8'},
     shelf:{C1:'普通',C2:'困難',C3:'地獄'},
     lianliankan:{C1:'簡單',C2:'普通',C3:'困難'},
-    puzzle:{C1:'4×4',C2:'5×5',C3:'6×6'}
+    puzzle:{C1:'4×4',C2:'5×5',C3:'6×6'},
+    numberbattle:{C1:'簡單',C2:'普通',C3:'困難'}
   };
   let data=null,currentTier='',currentLabel='',visible=true,bar=null,modal=null;
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const tierLabel=t=>labels[gameId]?.[t]||t;
   function startAnchor(){
-    const selectors={bingo:'#startRunBtn',sudoku:'#startRound',memory:'#startBtn',shelf:'#startBtn',lianliankan:'#startBtn',puzzle:'#startBtn'};
+    const selectors={bingo:'#startRunBtn',sudoku:'#startRound',memory:'#startBtn',shelf:'#startBtn',lianliankan:'#startBtn',puzzle:'#startBtn',numberbattle:'#startBtn'};
     const b=document.querySelector(selectors[gameId]||'#startBtn');
     if(!b)return null;
     return gameId==='bingo'?(b.closest('.run-actions')||b):b;

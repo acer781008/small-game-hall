@@ -32,8 +32,27 @@ function fmt(sec){
   return `${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;
 }
 function themeName(v){return {fruit:'水果',pet:'寵物',dessert:'甜點',mixed:'混合'}[v]||v}
-async function loadSettings(){
-  const r=await fetch('/games/lianliankan/api/settings',{cache:'no-store'});const data=await r.json();settings=data.settings;const t=Number(settings.timeMinutes)>0?`${settings.timeMinutes} 分鐘`:'不限時間';const box=$('choiceBox');if(settings.selfSelect){box.classList.remove('hidden');$('playerTheme').innerHTML=(settings.allowedThemes||[]).map(v=>`<option value="${v}">${themeName(v)}系列</option>`).join('');$('playerDifficulty').innerHTML=(settings.allowedDifficulties||[]).map(v=>`<option value="${v}">${DIFFICULTY[v].label}</option>`).join('');$('settingSummary').textContent=`玩家自選｜手動洗牌 ${settings.shuffleLimit} 次｜${t}`;updateTier()}else{box.classList.add('hidden');$('settingSummary').textContent=`${themeName(settings.theme)}系列｜${DIFFICULTY[settings.difficulty].label}｜手動洗牌 ${settings.shuffleLimit} 次｜${t}`;updateTier()}
+async function loadSettings(preserveChoice=false){
+  const oldTheme=preserveChoice?$('playerTheme')?.value:'';
+  const oldDifficulty=preserveChoice?$('playerDifficulty')?.value:'';
+  const r=await fetch('/games/lianliankan/api/settings',{cache:'no-store'});
+  const data=await r.json();
+  settings=data.settings;
+  const t=Number(settings.timeMinutes)>0?`${settings.timeMinutes} 分鐘`:'不限時間';
+  const box=$('choiceBox');
+  if(settings.selfSelect){
+    box.classList.remove('hidden');
+    $('playerTheme').innerHTML=(settings.allowedThemes||[]).map(v=>`<option value="${v}">${themeName(v)}系列</option>`).join('');
+    $('playerDifficulty').innerHTML=(settings.allowedDifficulties||[]).map(v=>`<option value="${v}">${DIFFICULTY[v].label}</option>`).join('');
+    if(oldTheme&&[...$('playerTheme').options].some(o=>o.value===oldTheme))$('playerTheme').value=oldTheme;
+    if(oldDifficulty&&[...$('playerDifficulty').options].some(o=>o.value===oldDifficulty))$('playerDifficulty').value=oldDifficulty;
+    $('settingSummary').textContent=`玩家自選｜手動洗牌 ${settings.shuffleLimit} 次｜${t}`;
+    updateTier();
+  }else{
+    box.classList.add('hidden');
+    $('settingSummary').textContent=`${themeName(settings.theme)}系列｜${DIFFICULTY[settings.difficulty].label}｜手動洗牌 ${settings.shuffleLimit} 次｜${t}`;
+    updateTier();
+  }
 }
 
 function updateTier(){if(!settings)return;const d=settings.selfSelect?($('playerDifficulty')?.value||settings.difficulty):settings.difficulty;window.setPrizeTier?.(settings.tierByDifficulty?.[d]||({easy:'C1',normal:'C2',hard:'C3'})[d]||'C1',({easy:'簡單',normal:'普通',hard:'困難'})[d]||d)}
@@ -45,7 +64,7 @@ function showEntry(text,ok=false){
   $('entryMsg').style.color=ok?'#2a744b':'#a84255';
 }
 async function startGame(){
-  await loadSettings();
+  await loadSettings(true);
   playerName=$('playerName').value.trim();if(!playerName){showEntry('請先輸入玩家名稱');return}localStorage.setItem(`llkName:${activity}`,playerName);let auth;try{const rr=await fetch('/games/lianliankan/api/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({activity,player:playerName,theme:settings.selfSelect?$('playerTheme').value:settings.theme,difficulty:settings.selfSelect?$('playerDifficulty').value:settings.difficulty})}),dd=await rr.json();if(!rr.ok)throw new Error(dd.message||'無法開始');auth=dd;settings=auth.settings||settings;runId=auth.runId;window.setPrizeTier?.(auth.tier||settings.tierByDifficulty?.[settings.difficulty]||'C1',({easy:'簡單',normal:'普通',hard:'困難'})[auth.difficulty||settings.difficulty]||auth.difficulty||settings.difficulty);window.setPrizeInfoVisible?.(false)}catch(e){showEntry(e.message);return}
 
   $('entryCard').classList.add('hidden');

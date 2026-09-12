@@ -1,0 +1,17 @@
+<!doctype html><html lang="zh-TW"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><meta name="theme-color" content="#f8f2ff"><title>數字大亂鬥</title><link rel="stylesheet" href="/games/numberbattle/style.css"><link rel="stylesheet" href="/common-leaderboard.css"><link rel="stylesheet" href="/common-prizes.css"></head><body>
+<main class="page">
+<section class="hero card"><div><div class="eyebrow">✨ 小遊戲館</div><h1>🔢 數字大亂鬥</h1><p>看目標、靠心算，在倒數內快速湊出答案！</p></div><div class="stats"><div class="stat"><span id="timeLabel">剩餘時間</span><b id="roundTime">00:00</b></div><div class="stat"><span>本題倒數</span><b id="questionTime">--</b></div><div class="stat"><span>完成</span><b id="progress">0 / 0</b></div></div></section>
+<section id="entryCard" class="card entry-card"><h2>開始挑戰</h2><label class="field"><span>玩家名稱</span><input id="playerName" maxlength="24" placeholder="輸入你的名稱"></label><div id="settingSummary" class="status"></div><div id="choiceBox" class="choice-box hidden"><label class="field"><span>玩法</span><select id="playerMode"></select></label><label class="field"><span>難度</span><select id="playerDifficulty"></select></label></div><button id="startBtn" class="primary wide">🎮 開始遊戲</button><div id="entryMsg" class="status hidden"></div></section>
+<section id="gameCard" class="card game-card hidden">
+  <div class="mode-badge" id="modeBadge">🎯 湊數</div>
+  <div class="target-panel"><span>🎯 目標數</span><b id="target">0</b><div class="combo" id="combo">COMBO ×0</div></div>
+  <div id="message" class="message">準備開始！</div>
+  <div id="board" class="number-board" aria-label="數字盤面"></div>
+  <div class="game-actions"><button id="clearBtn" class="secondary">↩ 清除選擇</button></div>
+</section>
+<section class="card rules"><b>玩法：</b>點選任意數字，用心算湊到正中央的目標數。系統不會顯示目前加總；超過目標就爆掉，每題時間到會換下一題。</section>
+<section id="numberBattleLeaderboard" class="hall-leaderboard"></section>
+</main>
+<div id="finishModal" class="modal hidden"><div class="modal-card"><div class="big">🎉</div><h2>挑戰完成！</h2><p id="finishText"></p><div id="finishPrize" class="status"></div><button id="finishHall" class="primary wide">🏠 返回遊戲廳</button></div></div>
+<div id="timeoutModal" class="modal hidden"><div class="modal-card"><div class="big">⏰</div><h2>時間到！</h2><p>這一局還沒有完成指定題數。</p><button id="timeoutAgain" class="primary wide">🔄 再挑戰一次</button><button id="timeoutHall" class="secondary wide">🏠 返回遊戲廳</button></div></div>
+<script src="/common-prizes.js"></script><script src="/games/numberbattle/player.js"></script></body></html>

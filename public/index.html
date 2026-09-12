@@ -108,6 +108,18 @@
       </div>
       <span class="deco deco-a">♥</span><span class="deco deco-b">✦</span>
     </article>
+
+    <article class="cute-game-card numberbattle-card" data-game="numberbattle">
+      <div class="cute-art"><div class="numberbattle-card-art" aria-label="數字大亂鬥插圖"><span class="nb-spark s1">✦</span><span class="nb-spark s2">⚡</span><span class="nb-target"><small>目標</small>25</span><span class="nb-num n1">7</span><span class="nb-num n2">8</span><span class="nb-num n3">10</span><span class="nb-mode">🎯 湊數　⚡ 連續</span></div></div>
+      <div class="cute-game-content">
+        <div class="cute-eyebrow">心算反應・連續挑戰！</div>
+        <h3>數字大亂鬥</h3>
+        <p>靠心算在倒數內湊出目標，挑戰連續反應。</p>
+        <span class="game-state">● 開放中</span>
+        <button class="go" data-game="numberbattle">▶ 開始遊戲</button>
+      </div>
+      <span class="deco deco-a">＋</span><span class="deco deco-b">★</span>
+    </article>
   </section>
 
   <p id="noGames" class="cute-empty" style="display:none">🎮 目前沒有開放中的遊戲</p>
@@ -118,8 +130,8 @@
 
 <script>
 let activity=null,timer=null;const qs=new URLSearchParams(location.search);const requested=qs.get('activity')||'';
-const gameUrls={bingo:c=>`/games/bingo/index.html?room=${encodeURIComponent(c)}&activity=${encodeURIComponent(c)}`,sudoku:c=>`/games/sudoku/player.html?activity=${encodeURIComponent(c)}`,memory:c=>`/games/memory/player.html?room=${encodeURIComponent(c)}&activity=${encodeURIComponent(c)}`,shelf:c=>`/games/shelf/player.html?room=${encodeURIComponent(c)}&activity=${encodeURIComponent(c)}`,lianliankan:c=>`/games/lianliankan/player.html?activity=${encodeURIComponent(c)}`,puzzle:c=>`/games/puzzle/player.html?activity=${encodeURIComponent(c)}`};
-const prizeGameMeta={bingo:{icon:'🎱',name:'賓果'},sudoku:{icon:'🧠',name:'數獨'},memory:{icon:'🎴',name:'翻牌'},shelf:{icon:'🛒',name:'貨架整理'},lianliankan:{icon:'🔗',name:'連連看'},puzzle:{icon:'🧩',name:'拼圖挑戰'}};
+const gameUrls={bingo:c=>`/games/bingo/index.html?room=${encodeURIComponent(c)}&activity=${encodeURIComponent(c)}`,sudoku:c=>`/games/sudoku/player.html?activity=${encodeURIComponent(c)}`,memory:c=>`/games/memory/player.html?room=${encodeURIComponent(c)}&activity=${encodeURIComponent(c)}`,shelf:c=>`/games/shelf/player.html?room=${encodeURIComponent(c)}&activity=${encodeURIComponent(c)}`,lianliankan:c=>`/games/lianliankan/player.html?activity=${encodeURIComponent(c)}`,puzzle:c=>`/games/puzzle/player.html?activity=${encodeURIComponent(c)}`,numberbattle:c=>`/games/numberbattle/player.html?activity=${encodeURIComponent(c)}`};
+const prizeGameMeta={bingo:{icon:'🎱',name:'賓果'},sudoku:{icon:'🧠',name:'數獨'},memory:{icon:'🎴',name:'翻牌'},shelf:{icon:'🛒',name:'貨架整理'},lianliankan:{icon:'🔗',name:'連連看'},puzzle:{icon:'🧩',name:'拼圖挑戰'},numberbattle:{icon:'🔢',name:'數字大亂鬥'}};
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 async function openPrizes(){if(!activity)return;const modal=document.getElementById('prizeModal'),list=document.getElementById('publicPrizeList');modal.classList.remove('hidden');list.innerHTML='<p class="muted">正在讀取…</p>';try{const r=await fetch('/api/public/prizes?activity='+encodeURIComponent(activity.code),{cache:'no-store'}),d=await r.json();if(!r.ok)throw new Error(d.message||'無法讀取獎品');const mode=d.awardMode||'A';document.getElementById('prizeModeText').textContent=mode==='C'?'C 模式｜依難度／盤面分級獎品':mode==='B'?'B 模式｜不同遊戲有指定獎品':'A 模式｜所有遊戲共用獎池';if(mode==='C'){const rows=d.cPrizes||[],html=[];for(const t of ['C1','C2','C3']){const a=rows.filter(p=>p.tier===t);if(!a.length)continue;html.push(`<section class="public-prize-group"><h3>${t} 獎池</h3>${a.map(p=>`<div class="public-prize-row ${Number(p.quantity)<=0?'soldout':''}"><span>${esc(p.name)}</span><b>${Number(p.quantity)>0?'剩餘 '+Number(p.quantity):'已兌換完畢'}</b></div>`).join('')}</section>`)}list.innerHTML=html.length?html.join(''):'<div class="public-prize-empty">目前尚未設定 C 模式獎品</div>';return}const prizes=d.prizes||[];if(!prizes.length){list.innerHTML='<div class="public-prize-empty">目前尚未設定獎品</div>';return}if(mode==='B'){const html=[];for(const [id,m] of Object.entries(prizeGameMeta)){const rows=prizes.filter(p=>(p.games||[]).includes(id));if(!rows.length)continue;html.push(`<section class="public-prize-group"><h3>${m.icon} ${m.name}</h3>${rows.map(p=>`<div class="public-prize-row ${Number(p.quantity)<=0?'soldout':''}"><span>${esc(p.name)}</span><b>${Number(p.quantity)>0?'剩餘 '+Number(p.quantity):'已兌換完畢'}</b></div>`).join('')}</section>`)}list.innerHTML=html.length?html.join(''):'<div class="public-prize-empty">目前沒有可顯示的指定獎品</div>'}else list.innerHTML=prizes.map(p=>`<div class="public-prize-row ${Number(p.quantity)<=0?'soldout':''}"><span>${esc(p.name)}</span><b>${Number(p.quantity)>0?'剩餘 '+Number(p.quantity):'已兌換完畢'}</b></div>`).join('')}catch(e){list.innerHTML=`<div class="public-prize-empty">${esc(e.message)}</div>`}}
 document.getElementById('showPrizesBtn').onclick=openPrizes;document.getElementById('closePrizeModal').onclick=()=>document.getElementById('prizeModal').classList.add('hidden');document.getElementById('prizeModal').onclick=e=>{if(e.target.id==='prizeModal')e.currentTarget.classList.add('hidden')};
