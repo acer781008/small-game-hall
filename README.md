@@ -84,3 +84,11 @@ npm start
 - 每個「遊戲＋C級」可新增多個獎品與數量；完成後只從該池剩餘獎品隨機發放並扣 1。
 - 玩家端「獎品說明」只顯示目前遊戲自己的 C 獎品。
 - 改版前未分類的舊 C 獎品會保留，主控可指定遊戲後移入，不會直接被誤發。
+
+## Render 永久資料保存（PostgreSQL）
+正式站若要讓活動、獎品、玩家、完成紀錄在重新部署／重新啟動後仍保留，請設定 `DATABASE_URL`。
+
+- 未設定 `DATABASE_URL`：使用 `data/*.json`，只建議本機測試。
+- 已設定 `DATABASE_URL`：自動建立 `small_game_hall_state` 資料表，並改由 PostgreSQL 保存。
+- 主控頁頂部可看到資料保存狀態；正式站應顯示「💾 永久資料庫：已連線」。
+- `ADMIN_PASSWORD` 與 `DATABASE_URL` 都請放在 Render Environment，不要寫進 GitHub。
