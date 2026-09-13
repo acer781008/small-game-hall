@@ -37,6 +37,28 @@ async function main(){
   const participation=await createParticipationStore({adapter,file:path.join(__dirname,'data','participation.json'),getCurrentActivityCode:()=>activities.currentCode()});
   const completions=await createCompletionStore({adapter,file:path.join(__dirname,'data','completions.json'),getCurrentActivityCode:()=>activities.currentCode()});
 
+  const RECORD_RETENTION_HOURS=Math.max(1,Math.floor(Number(process.env.RECORD_RETENTION_HOURS)||48));
+  const RECORD_RETENTION_MS=RECORD_RETENTION_HOURS*60*60*1000;
+  let retentionCleanupRunning=false;
+  async function cleanupExpiredRecords(){
+    if(retentionCleanupRunning)return;
+    retentionCleanupRunning=true;
+    try{
+      const codes=activities.recordRetentionCandidates?.(RECORD_RETENTION_MS,Date.now())||[];
+      for(const code of codes){
+        await participation.clearActivity(code);
+        await completions.clearActivity(code);
+        await prizes.clearExpiredActivityRecords(code);
+        await activities.markRecordsCleared(code,Date.now());
+        console.log(`已自動清除活動 ${code} 超過 ${RECORD_RETENTION_HOURS} 小時的玩家／完成／得獎紀錄`);
+      }
+    }catch(e){
+      console.error('自動清理舊紀錄失敗：',e);
+    }finally{
+      retentionCleanupRunning=false;
+    }
+  }
+
   function verifyPassword(password){
     if(!ADMIN_PASSWORD)return false;
     const a=Buffer.from(String(password||'')),b=Buffer.from(ADMIN_PASSWORD);
@@ -127,6 +149,11 @@ async function main(){
     else{try{await gameSettings.set(id,moduleGetSettings(id));}catch(e){console.warn(`seed ${id} settings failed:`,e.message);}}
   }
 
+  // 短期保存：活動結束或換新活動碼後保留 48 小時，再自動清除紀錄；設定與獎品內容保留。
+  await cleanupExpiredRecords();
+  const retentionTimer=setInterval(cleanupExpiredRecords,60*60*1000);
+  retentionTimer.unref?.();
+
   app.post('/api/activity/new',needAdmin,async(req,res)=>{
     try{
       const activity=await activities.create();
@@ -161,6 +188,7 @@ async function main(){
   server.listen(PORT,'0.0.0.0',()=>{
     console.log(`小遊戲館 V1.6 數字大亂鬥測試版：http://localhost:${PORT} 目前活動碼 ${currentCode()}`);
     console.log(`資料保存模式：${adapter.persistent?'PostgreSQL 永久資料庫':'本機 JSON（僅供測試）'}`);
+    console.log(`紀錄保存政策：活動結束／換新活動碼後保留 ${RECORD_RETENTION_HOURS} 小時，自動清除玩家／完成／得獎紀錄`);
   });
 
   async function shutdown(){try{await adapter.close();}finally{process.exit(0);}}
