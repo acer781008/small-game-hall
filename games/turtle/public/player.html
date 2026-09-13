@@ -27,10 +27,10 @@ body{margin:0;background:#f7faf7;color:var(--text);font-family:system-ui,"Noto S
 .stat b{display:block;margin-top:1px;font-size:18px;color:#386e3d}
 .statusLine{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 1px 7px;padding:6px 9px;border-radius:11px;background:#fff7e6;font-size:12px;font-weight:900;color:#7b5f36}
 .progress{height:8px;background:#dce9d9;border-radius:8px;overflow:hidden;flex:1}.bar{height:100%;width:0;background:linear-gradient(90deg,#65b85d,#f2c75d);transition:.15s}
-.board{position:relative;background:linear-gradient(#87d8e4 0 7%,#f3dda5 7%);border:2px solid #d8c281;border-radius:18px;padding:10px 5px 7px;height:min(64vh,610px);min-height:390px;overflow:hidden}
+.board{position:relative;background:linear-gradient(#87d8e4 0 7%,#f3dda5 7%);border:2px solid #d8c281;border-radius:18px;padding:10px 5px 7px;height:min(64vh,610px);min-height:390px;overflow:hidden;touch-action:manipulation}
 .board:before{content:"🌺  🌿  🌼  🌿  🌺";position:absolute;left:0;right:0;top:1px;text-align:center;font-size:12px}
 .grid{display:grid;gap:4px;width:100%;height:100%;position:relative;z-index:2}
-.cell{position:relative;min-width:0;min-height:0;overflow:visible}
+.cell{position:relative;min-width:0;min-height:0;overflow:visible;touch-action:manipulation}
 .hole{position:absolute;inset:0}.hole svg{width:100%;height:100%;display:block}
 .turtleViewport{position:absolute;left:4%;right:4%;top:3%;bottom:10%;overflow:hidden;z-index:5;pointer-events:none}
 .turtle{position:absolute;left:3%;bottom:-2%;width:94%;height:94%;object-fit:contain;transform-origin:50% 90%;transform:translateY(118%) scale(.78);transition:transform .18s cubic-bezier(.2,.9,.25,1.25);pointer-events:none;filter:drop-shadow(0 3px 1px #4d372a44)}
@@ -218,6 +218,8 @@ async function finish(win){
 function resetEntry(){$('#resultOverlay').classList.add('hidden');$('#gameCard').classList.add('hidden');$('#entryCard').classList.remove('hidden');renderChoices();updateSummary()}
 $('#ruleGrid').innerHTML=RULES.map(r=>`<div class="rule"><img src="${IMAGES[r.id]}"><div><strong>${r.name} <span class="score">${r.score}</span></strong><small>${r.desc}</small></div></div>`).join('');
 $('#showRules').onclick=()=>$('#rulesOverlay').classList.remove('hidden');$('#closeRules').onclick=()=>$('#rulesOverlay').classList.add('hidden');
+// Mobile: prevent browser double-tap/double-click zoom only inside the game board.
+document.querySelector('.board')?.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
 $('#soundToggle').onclick=()=>{SOUND_ON=!SOUND_ON;ensureAudio();$('#soundToggle').textContent=SOUND_ON?'🔊':'🔇'};
 $('#start').onclick=startRun;$('#endFree').onclick=()=>finish(false);$('#again').onclick=resetEntry;$('#hall').onclick=()=>location.href='/?activity='+encodeURIComponent(ACTIVITY);
 const saved=localStorage.getItem(`turtleName:${ACTIVITY}`);if(saved)$('#playerName').value=saved;

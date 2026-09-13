@@ -69,6 +69,20 @@ async function main(){
   function validAdminSession(t){if(!ADMIN_PASSWORD||!t)return false;const [expRaw,sig]=String(t).split('.');const exp=Number(expRaw);if(!Number.isFinite(exp)||exp<Date.now()||!sig)return false;const expected=adminSignature(exp),a=Buffer.from(sig),b=Buffer.from(expected);return a.length===b.length&&crypto.timingSafeEqual(a,b);}
 
   app.use(express.json({limit:'500kb'}));
+
+  // V1.7.2：Bingo／翻牌共用靜態素材層。
+  // 若日後把 public/static-assets/v172 上傳到獨立 CDN，只要在 Render 設 STATIC_ASSET_ORIGIN 即可切換；
+  // 未設定時仍使用本站的長效快取靜態路徑，遊戲端並保留原路徑 fallback。
+  const STATIC_ASSET_VERSION='v172';
+  const STATIC_ASSET_ORIGIN=String(process.env.STATIC_ASSET_ORIGIN||'').trim().replace(/\/+$/,'');
+  app.get('/asset-config.js',(req,res)=>{
+    res.type('application/javascript');
+    res.setHeader('Cache-Control','no-cache, must-revalidate');
+    res.send(`window.__STATIC_ASSET_ORIGIN__=${JSON.stringify(STATIC_ASSET_ORIGIN)};window.__STATIC_ASSET_VERSION__=${JSON.stringify(STATIC_ASSET_VERSION)};`);
+  });
+  app.use(`/static-assets/${STATIC_ASSET_VERSION}/farm`,express.static(path.join(__dirname,'public','static-assets',STATIC_ASSET_VERSION,'farm'),{
+    etag:true,maxAge:'30d',immutable:true,setHeaders(res){res.setHeader('Cache-Control','public, max-age=2592000, immutable');}
+  }));
   function cookies(req){const out={};String(req.headers.cookie||'').split(';').forEach(x=>{const i=x.indexOf('=');if(i>0)out[x.slice(0,i).trim()]=x.slice(i+1).trim()});return out;}
   function isAdmin(req){return validAdminSession(cookies(req).admin_session);}
   function needAdmin(req,res,next){if(!isAdmin(req))return res.status(401).json({ok:false,success:false,message:'請先登入主控'});next();}
