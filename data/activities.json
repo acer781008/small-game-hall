@@ -1,5 +1,5 @@
 {
-  "currentCode": "178086",
+  "currentCode": "602103",
   "activities": {
     "178086": {
       "code": "178086",
@@ -7,11 +7,30 @@
       "createdAt": 1788862265815,
       "startAt": null,
       "endAt": null,
+      "maxCompletionsPerGame": 0,
       "games": {
         "bingo": true,
         "sudoku": true,
         "memory": true,
-        "shelf": true
+        "shelf": true,
+        "lianliankan": true,
+        "puzzle": true
+      }
+    },
+    "602103": {
+      "code": "602103",
+      "note": "",
+      "createdAt": 1789179131078,
+      "startAt": null,
+      "endAt": null,
+      "maxCompletionsPerGame": 0,
+      "games": {
+        "bingo": true,
+        "sudoku": true,
+        "memory": true,
+        "shelf": true,
+        "lianliankan": true,
+        "puzzle": true
       }
     }
   }

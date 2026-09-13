@@ -1,3 +1,83 @@
 {
-  "activities": {}
+  "activities": {
+    "178086": {
+      "awardMode": "C",
+      "maxClaimsPerPlayer": 1,
+      "prizes": [
+        {
+          "id": "p_1788920701710_g32w5",
+          "name": "44163135",
+          "quantity": 0,
+          "enabled": true,
+          "games": [
+            "bingo",
+            "sudoku",
+            "memory",
+            "shelf"
+          ]
+        },
+        {
+          "id": "p_1788920709942_21thw",
+          "name": "15646",
+          "quantity": 0,
+          "enabled": true,
+          "games": [
+            "bingo",
+            "sudoku",
+            "memory",
+            "shelf"
+          ]
+        },
+        {
+          "id": "p_1788920745108_rmprj",
+          "name": "789",
+          "quantity": 1,
+          "enabled": true,
+          "games": [
+            "bingo",
+            "sudoku",
+            "memory",
+            "shelf"
+          ]
+        }
+      ],
+      "records": [
+        {
+          "id": "r_1788920841079_a6pec",
+          "activityCode": "178086",
+          "player": "79",
+          "game": "賓果",
+          "gameId": "bingo",
+          "prize": "15646",
+          "gameRef": "178086",
+          "awardedAt": 1788920841079
+        },
+        {
+          "id": "r_1788920915414_q9dho",
+          "activityCode": "178086",
+          "player": "99",
+          "game": "賓果",
+          "gameId": "bingo",
+          "prize": "44163135",
+          "gameRef": "178086",
+          "awardedAt": 1788920915414
+        }
+      ],
+      "claims": {
+        "79": 1,
+        "99": 1
+      },
+      "cPrizes": [],
+      "cRecords": []
+    },
+    "602103": {
+      "awardMode": "C",
+      "maxClaimsPerPlayer": 1,
+      "prizes": [],
+      "records": [],
+      "cPrizes": [],
+      "cRecords": [],
+      "claims": {}
+    }
+  }
 }

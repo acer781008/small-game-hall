@@ -1,0 +1,124 @@
+{
+  "activities": {
+    "178086": {
+      "games": {
+        "bingo": {
+          "name": "賓果",
+          "players": {
+            "79": {
+              "name": "79",
+              "plays": 1,
+              "firstPlayedAt": 1788920784007,
+              "lastPlayedAt": 1788920784007
+            },
+            "99": {
+              "name": "99",
+              "plays": 1,
+              "firstPlayedAt": 1788920850206,
+              "lastPlayedAt": 1788920850206
+            },
+            "789": {
+              "name": "789",
+              "plays": 1,
+              "firstPlayedAt": 1788919945462,
+              "lastPlayedAt": 1788919945462
+            },
+            "999": {
+              "name": "999",
+              "plays": 2,
+              "firstPlayedAt": 1788922353865,
+              "lastPlayedAt": 1788922447034
+            }
+          }
+        },
+        "puzzle": {
+          "name": "拼圖挑戰",
+          "players": {
+            "456": {
+              "name": "456",
+              "plays": 1,
+              "firstPlayedAt": 1788941987683,
+              "lastPlayedAt": 1788941987683
+            }
+          }
+        },
+        "lianliankan": {
+          "name": "連連看",
+          "players": {
+            "1": {
+              "name": "1",
+              "plays": 1,
+              "firstPlayedAt": 1788944572641,
+              "lastPlayedAt": 1788944572641
+            },
+            "8888": {
+              "name": "8888",
+              "plays": 1,
+              "firstPlayedAt": 1789179013572,
+              "lastPlayedAt": 1789179013572
+            }
+          }
+        },
+        "memory": {
+          "name": "翻牌",
+          "players": {
+            "789": {
+              "name": "789",
+              "plays": 1,
+              "firstPlayedAt": 1789178973366,
+              "lastPlayedAt": 1789178973366
+            }
+          }
+        }
+      }
+    },
+    "602103": {
+      "games": {
+        "bingo": {
+          "name": "賓果",
+          "players": {
+            "789": {
+              "name": "789",
+              "plays": 1,
+              "firstPlayedAt": 1789179185118,
+              "lastPlayedAt": 1789179185118
+            }
+          }
+        },
+        "memory": {
+          "name": "翻牌",
+          "players": {
+            "79": {
+              "name": "79",
+              "plays": 1,
+              "firstPlayedAt": 1789179296485,
+              "lastPlayedAt": 1789179296485
+            }
+          }
+        },
+        "sudoku": {
+          "name": "數獨",
+          "players": {
+            "79": {
+              "name": "79",
+              "plays": 2,
+              "firstPlayedAt": 1789179964141,
+              "lastPlayedAt": 1789190373358
+            }
+          }
+        },
+        "numberbattle": {
+          "name": "數字大亂鬥",
+          "players": {
+            "456": {
+              "name": "456",
+              "plays": 1,
+              "firstPlayedAt": 1789190381137,
+              "lastPlayedAt": 1789190381137
+            }
+          }
+        }
+      }
+    }
+  }
+}

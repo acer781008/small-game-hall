@@ -1,0 +1,76 @@
+{
+  "activities": {
+    "178086": {
+      "games": {
+        "lianliankan": {
+          "name": "連連看",
+          "players": {
+            "1": {
+              "name": "1",
+              "completions": 1,
+              "bestElapsedMs": 33172,
+              "lastCompletedAt": 1788944605813
+            }
+          },
+          "seen": {
+            "a4d8fa13-ead1-4526-9364-04bb4a6f49cd": 1788944605813
+          }
+        },
+        "memory": {
+          "name": "翻牌",
+          "players": {
+            "789": {
+              "name": "789",
+              "completions": 1,
+              "bestElapsedMs": 27334,
+              "lastCompletedAt": 1789179000699
+            }
+          },
+          "seen": {
+            "178086-0a145df528feb1787170c879-1789178973365-292183024": 1789179000699
+          }
+        }
+      }
+    },
+    "602103": {
+      "games": {
+        "bingo": {
+          "name": "賓果",
+          "players": {
+            "789": {
+              "name": "789",
+              "completions": 1,
+              "bestElapsedMs": 94633,
+              "lastCompletedAt": 1789179282750
+            }
+          },
+          "seen": {
+            "18457ece2cc9ef3b6b6588bb": 1789179282750
+          }
+        },
+        "numberbattle": {
+          "name": "數字大亂鬥",
+          "players": {
+            "456": {
+              "name": "456",
+              "completions": 1,
+              "bestElapsedMs": 17971,
+              "lastCompletedAt": 1789190399108,
+              "bestScore": 5,
+              "bestScoreElapsedMs": 17971,
+              "lastScore": 5,
+              "lastScoreElapsedMs": 17971,
+              "lastScoreAt": 1789190399108
+            }
+          },
+          "seen": {
+            "f7c44c2e-7a1c-4041-8ea3-3f7df5734828": 1789190399108
+          },
+          "scoreSeen": {
+            "f7c44c2e-7a1c-4041-8ea3-3f7df5734828": 1789190399108
+          }
+        }
+      }
+    }
+  }
+}

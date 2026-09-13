@@ -1,144 +1,39 @@
 {
   "games": {
     "bingo": {
-      "roomId": "178086",
+      "roomId": "602103",
       "controlMode": "admin",
       "version": "farm",
       "theme": "farm",
       "playMode": "normal",
       "items": [
         {
-          "id": "farm-116",
-          "face": "116",
+          "id": "farm-050",
+          "face": "050",
           "group": "farm",
-          "name": "圖案 116",
-          "file": "farm-116.png"
+          "name": "圖案 050",
+          "file": "farm-050.png"
         },
         {
-          "id": "farm-055",
-          "face": "055",
+          "id": "farm-002",
+          "face": "002",
           "group": "farm",
-          "name": "圖案 055",
-          "file": "farm-055.png"
+          "name": "圖案 002",
+          "file": "farm-002.png"
         },
         {
-          "id": "farm-052",
-          "face": "052",
+          "id": "farm-139",
+          "face": "139",
           "group": "farm",
-          "name": "圖案 052",
-          "file": "farm-052.png"
+          "name": "圖案 139",
+          "file": "farm-139.png"
         },
         {
-          "id": "farm-040",
-          "face": "040",
+          "id": "farm-017",
+          "face": "017",
           "group": "farm",
-          "name": "圖案 040",
-          "file": "farm-040.png"
-        },
-        {
-          "id": "farm-063",
-          "face": "063",
-          "group": "farm",
-          "name": "圖案 063",
-          "file": "farm-063.png"
-        },
-        {
-          "id": "farm-069",
-          "face": "069",
-          "group": "farm",
-          "name": "圖案 069",
-          "file": "farm-069.png"
-        },
-        {
-          "id": "farm-064",
-          "face": "064",
-          "group": "farm",
-          "name": "圖案 064",
-          "file": "farm-064.png"
-        },
-        {
-          "id": "farm-053",
-          "face": "053",
-          "group": "farm",
-          "name": "圖案 053",
-          "file": "farm-053.png"
-        },
-        {
-          "id": "farm-043",
-          "face": "043",
-          "group": "farm",
-          "name": "圖案 043",
-          "file": "farm-043.png"
-        },
-        {
-          "id": "farm-059",
-          "face": "059",
-          "group": "farm",
-          "name": "圖案 059",
-          "file": "farm-059.png"
-        },
-        {
-          "id": "farm-031",
-          "face": "031",
-          "group": "farm",
-          "name": "圖案 031",
-          "file": "farm-031.png"
-        },
-        {
-          "id": "farm-048",
-          "face": "048",
-          "group": "farm",
-          "name": "圖案 048",
-          "file": "farm-048.png"
-        },
-        {
-          "id": "farm-015",
-          "face": "015",
-          "group": "farm",
-          "name": "圖案 015",
-          "file": "farm-015.png"
-        },
-        {
-          "id": "farm-016",
-          "face": "016",
-          "group": "farm",
-          "name": "圖案 016",
-          "file": "farm-016.png"
-        },
-        {
-          "id": "farm-058",
-          "face": "058",
-          "group": "farm",
-          "name": "圖案 058",
-          "file": "farm-058.png"
-        },
-        {
-          "id": "farm-047",
-          "face": "047",
-          "group": "farm",
-          "name": "圖案 047",
-          "file": "farm-047.png"
-        },
-        {
-          "id": "farm-056",
-          "face": "056",
-          "group": "farm",
-          "name": "圖案 056",
-          "file": "farm-056.png"
-        },
-        {
-          "id": "farm-046",
-          "face": "046",
-          "group": "farm",
-          "name": "圖案 046",
-          "file": "farm-046.png"
-        },
-        {
-          "id": "farm-049",
-          "face": "049",
-          "group": "farm",
-          "name": "圖案 049",
-          "file": "farm-049.png"
+          "name": "圖案 017",
+          "file": "farm-017.png"
         },
         {
           "id": "farm-027",
@@ -148,64 +43,397 @@
           "file": "farm-027.png"
         },
         {
-          "id": "farm-065",
-          "face": "065",
+          "id": "farm-020",
+          "face": "020",
           "group": "farm",
-          "name": "圖案 065",
-          "file": "farm-065.png"
+          "name": "圖案 020",
+          "file": "farm-020.png"
         },
         {
-          "id": "farm-057",
-          "face": "057",
+          "id": "farm-016",
+          "face": "016",
           "group": "farm",
-          "name": "圖案 057",
-          "file": "farm-057.png"
+          "name": "圖案 016",
+          "file": "farm-016.png"
         },
         {
-          "id": "farm-073",
-          "face": "073",
+          "id": "farm-001",
+          "face": "001",
           "group": "farm",
-          "name": "圖案 073",
-          "file": "farm-073.png"
+          "name": "圖案 001",
+          "file": "farm-001.png"
         },
         {
-          "id": "farm-061",
-          "face": "061",
+          "id": "farm-079",
+          "face": "079",
           "group": "farm",
-          "name": "圖案 061",
-          "file": "farm-061.png"
+          "name": "圖案 079",
+          "file": "farm-079.png"
         },
         {
-          "id": "farm-003",
-          "face": "003",
+          "id": "farm-097",
+          "face": "097",
           "group": "farm",
-          "name": "圖案 003",
-          "file": "farm-003.png"
+          "name": "圖案 097",
+          "file": "farm-097.png"
+        },
+        {
+          "id": "farm-106",
+          "face": "106",
+          "group": "farm",
+          "name": "圖案 106",
+          "file": "farm-106.png"
+        },
+        {
+          "id": "farm-104",
+          "face": "104",
+          "group": "farm",
+          "name": "圖案 104",
+          "file": "farm-104.png"
+        },
+        {
+          "id": "farm-011",
+          "face": "011",
+          "group": "farm",
+          "name": "圖案 011",
+          "file": "farm-011.png"
+        },
+        {
+          "id": "farm-025",
+          "face": "025",
+          "group": "farm",
+          "name": "圖案 025",
+          "file": "farm-025.png"
+        },
+        {
+          "id": "farm-092",
+          "face": "092",
+          "group": "farm",
+          "name": "圖案 092",
+          "file": "farm-092.png"
+        },
+        {
+          "id": "farm-100",
+          "face": "100",
+          "group": "farm",
+          "name": "圖案 100",
+          "file": "farm-100.png"
+        },
+        {
+          "id": "farm-018",
+          "face": "018",
+          "group": "farm",
+          "name": "圖案 018",
+          "file": "farm-018.png"
+        },
+        {
+          "id": "farm-088",
+          "face": "088",
+          "group": "farm",
+          "name": "圖案 088",
+          "file": "farm-088.png"
+        },
+        {
+          "id": "farm-010",
+          "face": "010",
+          "group": "farm",
+          "name": "圖案 010",
+          "file": "farm-010.png"
+        },
+        {
+          "id": "farm-030",
+          "face": "030",
+          "group": "farm",
+          "name": "圖案 030",
+          "file": "farm-030.png"
+        },
+        {
+          "id": "farm-083",
+          "face": "083",
+          "group": "farm",
+          "name": "圖案 083",
+          "file": "farm-083.png"
+        },
+        {
+          "id": "farm-026",
+          "face": "026",
+          "group": "farm",
+          "name": "圖案 026",
+          "file": "farm-026.png"
+        },
+        {
+          "id": "farm-029",
+          "face": "029",
+          "group": "farm",
+          "name": "圖案 029",
+          "file": "farm-029.png"
+        },
+        {
+          "id": "farm-098",
+          "face": "098",
+          "group": "farm",
+          "name": "圖案 098",
+          "file": "farm-098.png"
+        },
+        {
+          "id": "farm-102",
+          "face": "102",
+          "group": "farm",
+          "name": "圖案 102",
+          "file": "farm-102.png"
+        },
+        {
+          "id": "farm-084",
+          "face": "084",
+          "group": "farm",
+          "name": "圖案 084",
+          "file": "farm-084.png"
+        },
+        {
+          "id": "farm-090",
+          "face": "090",
+          "group": "farm",
+          "name": "圖案 090",
+          "file": "farm-090.png"
+        },
+        {
+          "id": "farm-103",
+          "face": "103",
+          "group": "farm",
+          "name": "圖案 103",
+          "file": "farm-103.png"
+        },
+        {
+          "id": "farm-023",
+          "face": "023",
+          "group": "farm",
+          "name": "圖案 023",
+          "file": "farm-023.png"
+        },
+        {
+          "id": "farm-071",
+          "face": "071",
+          "group": "farm",
+          "name": "圖案 071",
+          "file": "farm-071.png"
+        },
+        {
+          "id": "farm-070",
+          "face": "070",
+          "group": "farm",
+          "name": "圖案 070",
+          "file": "farm-070.png"
+        },
+        {
+          "id": "farm-124",
+          "face": "124",
+          "group": "farm",
+          "name": "圖案 124",
+          "file": "farm-124.png"
+        },
+        {
+          "id": "farm-008",
+          "face": "008",
+          "group": "farm",
+          "name": "圖案 008",
+          "file": "farm-008.png"
+        },
+        {
+          "id": "farm-080",
+          "face": "080",
+          "group": "farm",
+          "name": "圖案 080",
+          "file": "farm-080.png"
+        },
+        {
+          "id": "farm-091",
+          "face": "091",
+          "group": "farm",
+          "name": "圖案 091",
+          "file": "farm-091.png"
+        },
+        {
+          "id": "farm-055",
+          "face": "055",
+          "group": "farm",
+          "name": "圖案 055",
+          "file": "farm-055.png"
+        },
+        {
+          "id": "farm-043",
+          "face": "043",
+          "group": "farm",
+          "name": "圖案 043",
+          "file": "farm-043.png"
+        },
+        {
+          "id": "farm-095",
+          "face": "095",
+          "group": "farm",
+          "name": "圖案 095",
+          "file": "farm-095.png"
+        },
+        {
+          "id": "farm-126",
+          "face": "126",
+          "group": "farm",
+          "name": "圖案 126",
+          "file": "farm-126.png"
+        },
+        {
+          "id": "farm-122",
+          "face": "122",
+          "group": "farm",
+          "name": "圖案 122",
+          "file": "farm-122.png"
+        },
+        {
+          "id": "farm-127",
+          "face": "127",
+          "group": "farm",
+          "name": "圖案 127",
+          "file": "farm-127.png"
+        },
+        {
+          "id": "farm-056",
+          "face": "056",
+          "group": "farm",
+          "name": "圖案 056",
+          "file": "farm-056.png"
+        },
+        {
+          "id": "farm-012",
+          "face": "012",
+          "group": "farm",
+          "name": "圖案 012",
+          "file": "farm-012.png"
+        },
+        {
+          "id": "farm-121",
+          "face": "121",
+          "group": "farm",
+          "name": "圖案 121",
+          "file": "farm-121.png"
+        },
+        {
+          "id": "farm-044",
+          "face": "044",
+          "group": "farm",
+          "name": "圖案 044",
+          "file": "farm-044.png"
+        },
+        {
+          "id": "farm-060",
+          "face": "060",
+          "group": "farm",
+          "name": "圖案 060",
+          "file": "farm-060.png"
+        },
+        {
+          "id": "farm-087",
+          "face": "087",
+          "group": "farm",
+          "name": "圖案 087",
+          "file": "farm-087.png"
+        },
+        {
+          "id": "farm-066",
+          "face": "066",
+          "group": "farm",
+          "name": "圖案 066",
+          "file": "farm-066.png"
+        },
+        {
+          "id": "farm-004",
+          "face": "004",
+          "group": "farm",
+          "name": "圖案 004",
+          "file": "farm-004.png"
         }
       ],
-      "size": 25,
+      "size": 49,
       "phase": "playing",
       "timeLimitEnabled": true,
-      "gameSeconds": 90,
-      "drawIntervalMs": 4000,
+      "gameSeconds": 0,
+      "gameMinutes": 0,
+      "drawIntervalMs": 3000,
       "targetLines": 1,
       "note": "",
-      "maxPlays": 1,
       "startCount": 0,
-      "finishCount": 0
+      "finishCount": 0,
+      "selfSelect": true,
+      "allowedVersions": [
+        "farm",
+        "number",
+        "picture"
+      ],
+      "allowedSizes": [
+        25,
+        36,
+        49,
+        64
+      ],
+      "allowedPlayModes": [
+        "normal",
+        "advanced"
+      ],
+      "tierBySize": {
+        "25": "C1",
+        "36": "C2",
+        "49": "C3",
+        "64": "C3"
+      }
     },
     "sudoku": {
       "variant": "標準數獨",
       "size": 9,
       "difficulty": "初級",
       "showWrongCount": false,
-      "roundMinutes": 5
+      "roundMinutes": 5,
+      "selfSelect": true,
+      "allowedVariants": [
+        "標準數獨",
+        "對角線數獨",
+        "殺手數獨",
+        "不連續數獨",
+        "不規則數獨",
+        "彩色數獨"
+      ],
+      "allowedSizes": [
+        9,
+        12
+      ],
+      "allowedDifficulties": [
+        "初級",
+        "中級",
+        "高級"
+      ],
+      "tierByDifficulty": {
+        "初級": "C1",
+        "中級": "C2",
+        "高級": "C3"
+      }
     },
     "memory": {
       "type": "farm",
-      "boardSize": "4x4",
+      "boardSize": "6x6",
       "gameMinutes": "3",
-      "maxPlays": "1"
+      "selfSelect": true,
+      "allowedTypes": [
+        "farm",
+        "idiom",
+        "poem"
+      ],
+      "allowedBoardSizes": [
+        "4x4",
+        "6x6",
+        "8x8"
+      ],
+      "tierByBoardSize": {
+        "4x4": "C1",
+        "6x6": "C2",
+        "8x8": "C3"
+      }
     },
     "shelf": {
       "themes": {
@@ -227,6 +455,68 @@
           "min": 5
         }
       }
+    },
+    "lianliankan": {
+      "theme": "fruit",
+      "difficulty": "hard",
+      "shuffleLimit": 2,
+      "timeMinutes": 5,
+      "selfSelect": true,
+      "allowedThemes": [
+        "fruit",
+        "pet",
+        "dessert",
+        "mixed"
+      ],
+      "allowedDifficulties": [
+        "easy",
+        "normal",
+        "hard"
+      ],
+      "tierByDifficulty": {
+        "easy": "C1",
+        "normal": "C2",
+        "hard": "C3"
+      }
+    },
+    "puzzle": {
+      "grid": 5,
+      "imageIds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "timeMinutes": 3,
+      "allowPeek": true,
+      "hintCount": 3
+    },
+    "numberbattle": {
+      "mode": "sum",
+      "allowedModes": [
+        "sum",
+        "rush"
+      ],
+      "difficulty": "easy",
+      "selfSelect": true,
+      "allowedDifficulties": [
+        "easy",
+        "normal",
+        "hard"
+      ],
+      "tierByDifficulty": {
+        "easy": "C1",
+        "normal": "C2",
+        "hard": "C3"
+      },
+      "questionSeconds": 8,
+      "timeMinutes": 3
     }
   }
 }

@@ -86,3 +86,7 @@
 
 
 .record-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.btn.danger{color:#a04455;border-color:#efcbd2;background:#fff7f8}.btn.danger:hover{background:#fff0f3}.record-actions button{white-space:nowrap}@media(max-width:620px){.record-actions{width:100%;justify-content:stretch}.record-actions button{flex:1 1 auto}}
+
+/* V1.7 turtle + history */
+.turtle-card{--cardA:#dff7bd;--cardB:#bfeee4;--accent:#53a953}.turtle-card .cute-art img{object-fit:cover;background:linear-gradient(145deg,#9be2ef,#eff4b7);border:3px solid rgba(255,255,255,.9)}
+.history-panel{border-color:#d7e5f1}.history-list{display:grid;gap:10px;margin-top:12px}.history-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;border:1px solid #e7dff0;border-radius:16px;background:linear-gradient(135deg,#fff,#fbf9ff)}.history-main{display:grid;gap:4px;min-width:0}.history-main>b{font-size:15px}.history-main small{color:var(--muted);line-height:1.4}.history-cleared{color:#4b9b73!important;font-weight:900}.history-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.history-actions button{padding:8px 11px;font-size:12px}.history-actions button:disabled{background:#eee;color:#999}.cute-admin-tabs{flex-wrap:wrap}@media(max-width:640px){.history-row{align-items:flex-start;flex-direction:column}.history-actions{width:100%;justify-content:flex-start}}

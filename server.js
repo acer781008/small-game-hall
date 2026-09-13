@@ -111,7 +111,7 @@ async function main(){
   app.get('/api/storage-status',needAdmin,(req,res)=>res.json({ok:true,persistent:adapter.persistent,mode:adapter.mode}));
 
   app.get('/admin.html',(req,res)=>isAdmin(req)?res.sendFile(path.join(__dirname,'public','admin.html')):res.redirect('/admin-login.html'));
-  for(const id of ['bingo','sudoku','memory','shelf','lianliankan','puzzle','numberbattle'])app.get(`/games/${id}/admin.html`,(req,res)=>isAdmin(req)?res.sendFile(path.join(__dirname,'games',id,'public','admin.html')):res.redirect('/admin-login.html'));
+  for(const id of ['bingo','sudoku','memory','shelf','lianliankan','puzzle','numberbattle','turtle'])app.get(`/games/${id}/admin.html`,(req,res)=>isAdmin(req)?res.sendFile(path.join(__dirname,'games',id,'public','admin.html')):res.redirect('/admin-login.html'));
 
   app.get('/api/activity',(req,res)=>res.json({ok:true,activity:activities.current(),status:activities.status()}));
   app.get('/api/activity/check/:code',(req,res)=>{const a=activities.get(req.params.code);res.json({ok:!!a&&activities.isCurrent(req.params.code),activity:a&&activities.isCurrent(req.params.code)?a:null});});
@@ -126,6 +126,7 @@ async function main(){
   app.use('/games/lianliankan',guardEntry('lianliankan','/player.html'));
   app.use('/games/puzzle',guardEntry('puzzle','/player.html'));
   app.use('/games/numberbattle',guardEntry('numberbattle','/player.html'));
+  app.use('/games/turtle',guardEntry('turtle','/player.html'));
 
   const commonGameDeps={awardPrize,recordPlay,recordCompletion,recordScore,getScoreLeaderboard,getCompletionStatus,isGameEnabled:gameEnabled,getActivityCode:currentCode,isActivityOpen:code=>activities.isOpen(code)};
   const bingo=require('./games/bingo/backend')({app,io,isAdmin,...commonGameDeps,isActivityCurrent:code=>activities.isCurrent(code)});
@@ -135,7 +136,8 @@ async function main(){
   const lianliankan=require('./games/lianliankan/backend')({app,...commonGameDeps});
   const puzzle=require('./games/puzzle/backend')({app,...commonGameDeps});
   const numberbattle=require('./games/numberbattle/backend')({app,...commonGameDeps});
-  const modules={bingo,sudoku,memory,shelf,lianliankan,puzzle,numberbattle};
+  const turtle=require('./games/turtle/backend')({app,...commonGameDeps});
+  const modules={bingo,sudoku,memory,shelf,lianliankan,puzzle,numberbattle,turtle};
 
   function moduleGetSettings(id){const mod=modules[id];return id==='bingo'?mod.getSettings(currentCode()):mod.getSettings();}
   function moduleSetSettings(id,settings){const mod=modules[id];return id==='bingo'?mod.setSettings(currentCode(),settings):mod.setSettings(settings);}
@@ -157,7 +159,7 @@ async function main(){
   app.post('/api/activity/new',needAdmin,async(req,res)=>{
     try{
       const activity=await activities.create();
-      bingo.ensureRoom(activity.code);sudoku.resetForActivity?.();memory.resetForActivity?.(activity.code);shelf.resetForActivity?.(activity.code);lianliankan.resetForActivity?.(activity.code);puzzle.resetForActivity?.(activity.code);numberbattle.resetForActivity?.(activity.code);
+      bingo.ensureRoom(activity.code);sudoku.resetForActivity?.();memory.resetForActivity?.(activity.code);shelf.resetForActivity?.(activity.code);lianliankan.resetForActivity?.(activity.code);puzzle.resetForActivity?.(activity.code);numberbattle.resetForActivity?.(activity.code);turtle.resetForActivity?.(activity.code);
       // 新活動沿用目前所有遊戲設定；設定本身已由 game-settings 永久保存。
       for(const id of Object.keys(modules)){const saved=gameSettings.get(id);if(saved){try{moduleSetSettings(id,saved);}catch{}}}
       res.json({ok:true,activity});
@@ -166,6 +168,32 @@ async function main(){
 
   app.get('/api/game-settings/:id',needAdmin,(req,res)=>{try{const id=req.params.id,mod=modules[id];if(!mod?.getSettings)return res.status(404).json({ok:false,message:'找不到遊戲'});res.json({ok:true,settings:moduleGetSettings(id)});}catch(e){res.status(400).json({ok:false,message:e.message});}});
   app.put('/api/game-settings/:id',needAdmin,async(req,res)=>{try{const id=req.params.id,mod=modules[id];if(!mod?.setSettings)return res.status(404).json({ok:false,message:'找不到遊戲'});const settings=moduleSetSettings(id,req.body||{});await gameSettings.set(id,settings);res.json({ok:true,settings});}catch(e){res.status(400).json({ok:false,message:e.message});}});
+
+  function activityHistoryRows(){
+    return (activities.list?.()||[]).map(a=>{
+      const code=String(a.code||''),ps=prizes.state(code),part=participation.state(code).records||[],comp=completions.allPlayerStats(code)||[];
+      const playerKeys=new Set(part.map(x=>String(x.player||'').toLocaleLowerCase()));
+      const finishCount=comp.reduce((n,x)=>n+(Number(x.completions)||0),0);
+      const prizeCount=(ps.records?.length||0)+(ps.cRecords?.length||0);
+      const claimCount=Object.keys((ps._claims)||{}).length;
+      let state='history';if(code===currentCode()){const st=activities.status(code);state=st.state;}else state='retired';
+      return {code,note:a.note||'',createdAt:a.createdAt||0,startAt:a.startAt||null,endAt:a.endAt||null,retiredAt:a.retiredAt||null,recordsClearedAt:a.recordsClearedAt||null,current:code===currentCode(),state,playerCount:playerKeys.size,playRows:part.length,completionCount:finishCount,prizeRecordCount:prizeCount};
+    });
+  }
+  app.get('/api/activity/history',needAdmin,(req,res)=>res.json({ok:true,retentionHours:RECORD_RETENTION_HOURS,rows:activityHistoryRows()}));
+  app.get('/api/activity/history/:code',needAdmin,(req,res)=>{
+    const code=String(req.params.code||''),a=activities.get(code);if(!a)return res.status(404).json({ok:false,message:'找不到活動'});
+    const ps=prizes.state(code),part=participation.state(code),comp=completions.allPlayerStats(code);
+    res.json({ok:true,activity:a,prizeRecords:ps.records||[],cPrizeRecords:ps.cRecords||[],participation:part.records||[],completions:comp||[]});
+  });
+  app.delete('/api/activity/history/:code/records',needAdmin,async(req,res)=>{
+    try{
+      const code=String(req.params.code||''),a=activities.get(code);if(!a)return res.status(404).json({ok:false,message:'找不到活動'});
+      if(code===currentCode()&&activities.isOpen(code))return res.status(409).json({ok:false,message:'目前活動仍在進行中，為避免誤刪，請先結束活動或產生新活動碼'});
+      await participation.clearActivity(code);await completions.clearActivity(code);await prizes.clearExpiredActivityRecords(code);await activities.markRecordsCleared(code,Date.now());
+      res.json({ok:true,activityCode:code,cleared:true});
+    }catch(e){res.status(500).json({ok:false,message:'清除活動紀錄失敗：'+e.message});}
+  });
 
   app.get('/api/prizes',needAdmin,(req,res)=>res.json({ok:true,...prizes.state(currentCode())}));
   app.get('/api/public/prizes',(req,res)=>{const code=String(req.query.activity||currentCode());if(code!==currentCode())return res.status(404).json({ok:false,message:'活動碼已失效'});res.json({ok:true,...prizes.publicState(code)});});

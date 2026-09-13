@@ -7,25 +7,28 @@
         "farm": true,
         "candy": true
       },
-      "attempts": 3,
       "levels": {
         "normal": {
           "open": true,
-          "min": 3
+          "tier": "C1"
         },
         "hard": {
           "open": false,
-          "min": 4
+          "tier": "C2"
         },
         "hell": {
           "open": false,
-          "min": 5
+          "tier": "C3"
         }
       },
       "runs": [],
       "records": [],
       "createdAt": 1788862265827,
-      "updatedAt": 1788862265827
+      "updatedAt": 1789179075974,
+      "defaultLevel": "normal",
+      "defaultTheme": "farm",
+      "selfSelect": false,
+      "timeMinutes": 10
     },
     "554828": {
       "room": "554828",
@@ -53,6 +56,36 @@
       "records": [],
       "createdAt": 1788852309954,
       "updatedAt": 1788852309954
+    },
+    "602103": {
+      "room": "602103",
+      "title": "貨架整理小遊戲",
+      "selfSelect": false,
+      "defaultLevel": "normal",
+      "defaultTheme": "farm",
+      "timeMinutes": 10,
+      "themes": {
+        "farm": true,
+        "candy": true
+      },
+      "levels": {
+        "normal": {
+          "open": true,
+          "tier": "C1"
+        },
+        "hard": {
+          "open": false,
+          "tier": "C2"
+        },
+        "hell": {
+          "open": false,
+          "tier": "C3"
+        }
+      },
+      "runs": [],
+      "records": [],
+      "createdAt": 1789179131079,
+      "updatedAt": 1789190318440
     }
   }
 }
