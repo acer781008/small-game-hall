@@ -153,25 +153,13 @@ io.on('connection',socket=>{
     socket.emit('joinSuccess',{...roomInfo(room),name:player.name,gamesPlayed:player.gamesPlayed,successCount:player.successCount||0,bestCompletionMs:player.bestCompletionMs||0,prizeClaimCount:player.prizeClaimCount||0,latestPrize:player.latestPrize||null,activeRun:publicActiveRun(player.activeRun)});
     emitPlayerCount(room);emitRanking(room);
   });
-  socket.on('prepareBoard',(payload={})=>{
-    if(!isGameEnabled('bingo')||!isActivityCurrent(socket.data.roomId))return;
-    const room=rooms.get(socket.data.roomId),player=room?.players.get(socket.data.clientId);if(!room||!player)return;
-    let version=room.version,size=room.size,playMode=room.playMode;
-    if(room.selfSelect){if(room.allowedVersions.includes(payload.version))version=payload.version;if(room.allowedSizes.includes(Number(payload.size)))size=Number(payload.size);if(room.allowedPlayModes.includes(payload.playMode))playMode=payload.playMode}
-    if(version==='picture'&&![25,36].includes(size))return socket.emit('runDenied','麻將圖片目前只支援 5×5、6×6');
-    const old=player.previewBoard;if(old&&old.version===version&&Number(old.size)===Number(size)&&old.playMode===playMode&&Array.isArray(old.boardNumbers)&&old.boardNumbers.length===size)return socket.emit('boardPrepared',{...old});
-    const items=makeItems(version,size,playMode),cfg={version,size,playMode,items},boardNumbers=normalizeRunBoard(cfg,null);
-    player.previewBoard={version,size,playMode,items:Array.isArray(items)?items.map(x=>({...x})):[],boardNumbers};
-    socket.emit('boardPrepared',{...player.previewBoard});
-  });
   socket.on('beginRun',async(payload={})=>{
     if(!isGameEnabled('bingo'))return socket.emit('runDenied','賓果目前未開放');if(!isActivityCurrent(socket.data.roomId))return socket.emit('runDenied','活動已切換，請返回小遊戲館');if(!isActivityOpen(socket.data.roomId))return socket.emit('runDenied','目前不在活動開放時間');
     const room=rooms.get(socket.data.roomId),player=room?.players.get(socket.data.clientId);if(!room||!player)return;
     if(player.activeRun)return socket.emit('runAuthorized',{...publicActiveRun(player.activeRun),theme:player.activeRun.version==='picture'?'mahjong':player.activeRun.version==='farm'?'farm':null,resumed:true});
     const completionStatus=getCompletionStatus({activityCode:room.id,gameId:'bingo',playerName:player.name,playerKey:player.name});if(!completionStatus.allowed)return socket.emit('runDenied',`已達每位玩家可完成次數上限（${completionStatus.max} 次）`);
-    let version=room.version,size=room.size,playMode=room.playMode;if(room.selfSelect){if(room.allowedVersions.includes(payload.version))version=payload.version;if(room.allowedSizes.includes(Number(payload.size)))size=Number(payload.size);if(room.allowedPlayModes.includes(payload.playMode))playMode=payload.playMode}if(version==='picture'&&![25,36].includes(size))return socket.emit('runDenied','麻將圖片目前只支援 5×5、6×6');const theme=version==='picture'?'mahjong':version==='farm'?'farm':null,startedAt=Date.now()+BINGO_READY_DELAY_MS,prepared=player.previewBoard&&player.previewBoard.version===version&&Number(player.previewBoard.size)===Number(size)&&player.previewBoard.playMode===playMode?player.previewBoard:null,items=prepared?.items||makeItems(version,size,playMode),cfg={version,size,playMode,items};
-    const runId=crypto.randomBytes(12).toString('hex'),boardNumbers=prepared?.boardNumbers?.slice()||normalizeRunBoard(cfg,payload.boardNumbers),drawPool=shuffleForRun(runSourcePool(cfg)),tier=room.tierBySize?.[size]||'C1',selection={素材:version==='farm'?'種菜圖片':version==='picture'?'麻將圖片':'數字',盤面:`${Math.sqrt(size)}×${Math.sqrt(size)}`,玩法:playMode==='advanced'?'進階模式':'一般模式'};
-    player.previewBoard=null;
+    let version=room.version,size=room.size,playMode=room.playMode;if(room.selfSelect){if(room.allowedVersions.includes(payload.version))version=payload.version;if(room.allowedSizes.includes(Number(payload.size)))size=Number(payload.size);if(room.allowedPlayModes.includes(payload.playMode))playMode=payload.playMode}if(version==='picture'&&![25,36].includes(size))return socket.emit('runDenied','麻將圖片目前只支援 5×5、6×6');const theme=version==='picture'?'mahjong':version==='farm'?'farm':null,startedAt=Date.now()+BINGO_READY_DELAY_MS,items=makeItems(version,size,playMode),cfg={version,size,playMode,items};
+    const runId=crypto.randomBytes(12).toString('hex'),boardNumbers=normalizeRunBoard(cfg,room.selfSelect?null:payload.boardNumbers),drawPool=shuffleForRun(runSourcePool(cfg)),tier=room.tierBySize?.[size]||'C1',selection={素材:version==='farm'?'種菜圖片':version==='picture'?'麻將圖片':'數字',盤面:`${Math.sqrt(size)}×${Math.sqrt(size)}`,玩法:playMode==='advanced'?'進階模式':'一般模式'};
     player.activeRun={id:runId,startedAt,endsAt:Number(room.gameSeconds)>0?startedAt+Number(room.gameSeconds)*1000:null,size,version,playMode,drawIntervalMs:Number(room.drawIntervalMs||4000),boardNumbers,drawPool,items:Array.isArray(items)?items.map(x=>({...x})):[],tier,selection};
     room.startCount=(room.startCount||0)+1;await recordPlay({activityCode:room.id,gameId:'bingo',gameName:'賓果',playerName:player.name,playerKey:player.name});
     socket.emit('runAuthorized',{...publicActiveRun(player.activeRun),theme,resumed:false});io.to(room.id).emit('roomStatsUpdate',{startCount:room.startCount,finishCount:room.finishCount||0});emitRanking(room);
