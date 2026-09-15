@@ -3,8 +3,9 @@ const path=require('path');
 const crypto=require('crypto');
 
 module.exports=function initTurtle({app,awardPrize,recordPlay=async()=>({}),recordCompletion=async()=>({}),recordScore=async()=>({}),getCompletionStatus=()=>({allowed:true,completions:0,max:0}),isGameEnabled,getActivityCode,isActivityOpen=()=>true}){
-  const DIFFS=['easy','normal','hard'];
-  const TIERS={easy:'C1',normal:'C2',hard:'C3'};
+  const DIFFS=['easy','normal','hard','extreme'];
+  const TIERS={easy:'C1',normal:'C2',hard:'C3',extreme:'C3'};
+  const DIFF_LABEL={easy:'簡單',normal:'標準',hard:'困難',extreme:'極難'};
   let settings={
     difficultyMode:'host',
     difficulty:'normal',
@@ -22,19 +23,36 @@ module.exports=function initTurtle({app,awardPrize,recordPlay=async()=>({}),reco
     const allowedRaw=Array.isArray(s.allowedDifficulties)?s.allowedDifficulties:settings.allowedDifficulties;
     let allowedDifficulties=[...new Set((allowedRaw||DIFFS).filter(x=>DIFFS.includes(x)))];
     if(!allowedDifficulties.length)allowedDifficulties=[difficulty];
-
     const timeMode=s.timeMode==='unlimited'?'unlimited':'limited';
     const minutes=Math.max(1,Math.min(30,Math.floor(Number(s.minutes)||Number(settings.minutes)||3)));
     const targetMode=s.targetMode==='unlimited'?'unlimited':'limited';
-    const target=Math.max(10,Math.min(300,Math.floor(Number(s.target)||Number(settings.target)||30)));
-
+    const target=Math.max(10,Math.min(500,Math.floor(Number(s.target)||Number(settings.target)||30)));
     return {difficultyMode,difficulty,allowedDifficulties,timeMode,minutes,targetMode,target};
   }
 
   function getSettings(){return JSON.parse(JSON.stringify(settings));}
   function setSettings(s={}){settings=normalize(s);return getSettings();}
   const key=(activity,player)=>`${activity}|${String(player||'').trim().toLocaleLowerCase()}`;
-  const pub=r=>r?{runId:r.runId,startedAt:r.startedAt,endsAt:r.endsAt,difficulty:r.difficulty,tier:r.tier,settings:r.settings}:null;
+  const pub=r=>r?{runId:r.runId,startedAt:r.startedAt,endsAt:r.endsAt,difficulty:r.difficulty,tier:r.tier,settings:r.settings,targetClaimed:!!r.targetClaimed,prize:r.prize||null}:null;
+
+  async function claimTarget(r,score,now=Date.now()){
+    if(r.targetClaimed)return {completed:true,completion:r.completion||null,prize:r.prize||null,claimedAt:r.claimedAt||null};
+    if(r.claimPromise)return r.claimPromise;
+    const within=!r.endsAt||now<=r.endsAt+1800;
+    if(r.settings.targetMode!=='limited'||score<r.settings.target||!within)return {completed:false,completion:null,prize:null};
+    const elapsedMs=Math.max(0,now-r.startedAt);
+    r.claimPromise=(async()=>{
+      const completion=await recordCompletion({activityCode:r.activity,gameId:'turtle',gameName:'烏龜島大作戰',playerName:r.player,playerKey:r.player,elapsedMs,completedAt:now,runKey:r.runId});
+      const prize=await awardPrize({
+        activityCode:r.activity,gameId:'turtle',game:'烏龜島大作戰',
+        playerName:r.player,playerKey:r.player,gameRef:r.activity,tier:r.tier,
+        selection:{難度:DIFF_LABEL[r.difficulty]||r.difficulty,分數:`${score} 分`,目標:`${r.settings.target} 分`},elapsedMs
+      });
+      r.completion=completion;r.prize=prize;r.claimedAt=now;r.targetClaimed=true;
+      return {completed:true,completion,prize,claimedAt:now};
+    })();
+    try{return await r.claimPromise}finally{r.claimPromise=null}
+  }
 
   app.use('/games/turtle',express.static(path.join(__dirname,'public'),{etag:true,maxAge:0}));
   app.get('/games/turtle/api/settings',(req,res)=>res.json({ok:true,settings:getSettings()}));
@@ -45,53 +63,47 @@ module.exports=function initTurtle({app,awardPrize,recordPlay=async()=>({}),reco
     if(!player)return res.status(400).json({ok:false,message:'請輸入玩家名稱'});
     if(!isGameEnabled('turtle'))return res.status(403).json({ok:false,message:'烏龜島大作戰目前未開放'});
     if(!isActivityOpen(activity))return res.status(403).json({ok:false,message:'目前不在活動開放時間'});
-
     const k=key(activity,player),existing=runs.get(k);
     if(existing)return res.json({ok:true,...pub(existing),resumed:true});
-
     const st=getCompletionStatus({activityCode:activity,gameId:'turtle',playerName:player,playerKey:player});
     if(!st.allowed)return res.status(409).json({ok:false,message:`已達每位玩家可完成次數上限（${st.max} 次）`,completionStatus:st});
-
     let difficulty=settings.difficulty;
     if(settings.difficultyMode==='player'){
       const allowed=settings.allowedDifficulties||DIFFS;
       if(allowed.includes(req.body?.difficulty))difficulty=req.body.difficulty;
       else difficulty=allowed[0]||settings.difficulty;
     }
-
     const startedAt=Date.now(),endsAt=settings.timeMode==='limited'?startedAt+settings.minutes*60000:null;
-    const r={runId:crypto.randomUUID(),activity,player,startedAt,endsAt,difficulty,tier:TIERS[difficulty],settings:{...getSettings(),difficulty}};
+    const r={runId:crypto.randomUUID(),activity,player,startedAt,endsAt,difficulty,tier:TIERS[difficulty],settings:{...getSettings(),difficulty},targetClaimed:false,completion:null,prize:null,claimedAt:null};
     runs.set(k,r);
-
     await recordPlay({activityCode:activity,gameId:'turtle',gameName:'烏龜島大作戰',playerName:player,playerKey:player});
     res.json({ok:true,...pub(r),resumed:false,completionStatus:st});
   });
 
+  app.post('/games/turtle/api/claim-target',async(req,res)=>{
+    try{
+      const activity=String(req.body?.activity||''),player=String(req.body?.player||'').trim().slice(0,30),runId=String(req.body?.runId||'');
+      if(activity!==String(getActivityCode()))return res.status(404).json({ok:false,message:'活動不存在'});
+      const r=runs.get(key(activity,player));
+      if(!r||r.runId!==runId)return res.status(404).json({ok:false,message:'找不到本局資料'});
+      const score=Math.max(0,Math.floor(Number(req.body?.score)||0));
+      const result=await claimTarget(r,score);
+      res.json({ok:true,...result,score,tier:r.tier,completionStatus:getCompletionStatus({activityCode:activity,gameId:'turtle',playerName:player,playerKey:player})});
+    }catch(e){res.status(500).json({ok:false,message:'達標獎勵處理失敗：'+e.message});}
+  });
+
   app.post('/games/turtle/api/finish',async(req,res)=>{
-    const activity=String(req.body?.activity||''),player=String(req.body?.player||'').trim().slice(0,30),runId=String(req.body?.runId||'');
-    if(activity!==String(getActivityCode()))return res.status(404).json({ok:false,message:'活動不存在'});
-    const k=key(activity,player),r=runs.get(k);
-    if(!r||r.runId!==runId)return res.status(404).json({ok:false,message:'找不到本局資料'});
-
-    runs.delete(k);
-    const now=Date.now(),elapsedMs=Math.max(0,now-r.startedAt),within=!r.endsAt||now<=r.endsAt+1800;
-    const score=Math.max(0,Math.floor(Number(req.body?.score)||0));
-    const completed=!!req.body?.completed && r.settings.targetMode==='limited' && score>=r.settings.target && within;
-
-    await recordScore({activityCode:activity,gameId:'turtle',gameName:'烏龜島大作戰',playerName:player,playerKey:player,score,elapsedMs,playedAt:now,runKey:r.runId});
-
-    let completion=null,prize=null;
-    if(completed){
-      completion=await recordCompletion({activityCode:activity,gameId:'turtle',gameName:'烏龜島大作戰',playerName:player,playerKey:player,elapsedMs,completedAt:now,runKey:r.runId});
-      const diffLabel={easy:'簡單',normal:'標準',hard:'困難'}[r.difficulty];
-      prize=await awardPrize({
-        activityCode:activity,gameId:'turtle',game:'烏龜島大作戰',
-        playerName:player,playerKey:player,gameRef:activity,tier:r.tier,
-        selection:{難度:diffLabel,分數:`${score} 分`,目標:`${r.settings.target} 分`},elapsedMs
-      });
-    }
-
-    res.json({ok:true,completed,score,elapsedMs,completion,prize,tier:r.tier,completionStatus:getCompletionStatus({activityCode:activity,gameId:'turtle',playerName:player,playerKey:player})});
+    try{
+      const activity=String(req.body?.activity||''),player=String(req.body?.player||'').trim().slice(0,30),runId=String(req.body?.runId||'');
+      if(activity!==String(getActivityCode()))return res.status(404).json({ok:false,message:'活動不存在'});
+      const k=key(activity,player),r=runs.get(k);
+      if(!r||r.runId!==runId)return res.status(404).json({ok:false,message:'找不到本局資料'});
+      const now=Date.now(),elapsedMs=Math.max(0,now-r.startedAt),score=Math.max(0,Math.floor(Number(req.body?.score)||0));
+      if(r.settings.targetMode==='limited'&&score>=r.settings.target)await claimTarget(r,score,now);
+      runs.delete(k);
+      await recordScore({activityCode:activity,gameId:'turtle',gameName:'烏龜島大作戰',playerName:player,playerKey:player,score,elapsedMs,playedAt:now,runKey:r.runId});
+      res.json({ok:true,completed:!!r.targetClaimed,score,elapsedMs,completion:r.completion||null,prize:r.prize||null,tier:r.tier,completionStatus:getCompletionStatus({activityCode:activity,gameId:'turtle',playerName:player,playerKey:player})});
+    }catch(e){res.status(500).json({ok:false,message:'結束遊戲失敗：'+e.message});}
   });
 
   return {getSettings,setSettings,resetForActivity:()=>runs.clear()};

@@ -27,10 +27,10 @@ body{margin:0;background:#f7faf7;color:var(--text);font-family:system-ui,"Noto S
 .stat b{display:block;margin-top:1px;font-size:18px;color:#386e3d}
 .statusLine{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 1px 7px;padding:6px 9px;border-radius:11px;background:#fff7e6;font-size:12px;font-weight:900;color:#7b5f36}
 .progress{height:8px;background:#dce9d9;border-radius:8px;overflow:hidden;flex:1}.bar{height:100%;width:0;background:linear-gradient(90deg,#65b85d,#f2c75d);transition:.15s}
-.board{position:relative;background:linear-gradient(#87d8e4 0 7%,#f3dda5 7%);border:2px solid #d8c281;border-radius:18px;padding:10px 5px 7px;height:min(64vh,610px);min-height:390px;overflow:hidden;touch-action:manipulation}
+.board{position:relative;background:linear-gradient(#87d8e4 0 7%,#f3dda5 7%);border:2px solid #d8c281;border-radius:18px;padding:10px 5px 7px;height:min(64vh,610px);min-height:390px;overflow:hidden;touch-action:none}
 .board:before{content:"🌺  🌿  🌼  🌿  🌺";position:absolute;left:0;right:0;top:1px;text-align:center;font-size:12px}
 .grid{display:grid;gap:4px;width:100%;height:100%;position:relative;z-index:2}
-.cell{position:relative;min-width:0;min-height:0;overflow:visible;touch-action:manipulation}
+.cell{position:relative;min-width:0;min-height:0;overflow:visible;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .hole{position:absolute;inset:0}.hole svg{width:100%;height:100%;display:block}
 .turtleViewport{position:absolute;left:4%;right:4%;top:3%;bottom:10%;overflow:hidden;z-index:5;pointer-events:none}
 .turtle{position:absolute;left:3%;bottom:-2%;width:94%;height:94%;object-fit:contain;transform-origin:50% 90%;transform:translateY(118%) scale(.78);transition:transform .18s cubic-bezier(.2,.9,.25,1.25);pointer-events:none;filter:drop-shadow(0 3px 1px #4d372a44)}
@@ -79,7 +79,7 @@ body{margin:0;background:#f7faf7;color:var(--text);font-family:system-ui,"Noto S
  </div>
  <div class="statusLine"><span id="msg">準備開始</span><div class="progress"><div id="bar" class="bar"></div></div></div>
  <div class="board"><div id="grid" class="grid"></div></div>
- <div class="gameActions"><button id="endFree" class="secondary hidden">■ 結束自由遊玩</button></div>
+ <div class="gameActions"><button id="endFree" class="secondary">⏹ 結束遊戲</button></div>
 </section>
 </main>
 
@@ -103,10 +103,11 @@ const RULES=[
 const DIFF={
  easy:{label:'🌱 簡單',holes:9,cols:3,speed:'slow',max:2,rock:.05,fastSpecial:.15},
  normal:{label:'⭐ 標準',holes:16,cols:4,speed:'normal',max:3,rock:.10,fastSpecial:.25},
- hard:{label:'🔥 困難',holes:20,cols:5,speed:'fast',max:4,rock:.16,fastSpecial:.36}
+ hard:{label:'🔥 困難',holes:20,cols:5,speed:'fast',max:4,rock:.16,fastSpecial:.36},
+ extreme:{label:'⚡ 極難',holes:25,cols:5,speed:'extreme',max:5,rock:.22,fastSpecial:.48}
 };
 let SETTINGS={difficultyMode:'host',difficulty:'normal',allowedDifficulties:['easy','normal','hard'],timeMode:'limited',minutes:3,targetMode:'limited',target:30};
-let selectedDifficulty='normal',CURRENT_RUN=null,running=false,score=0,combo=0,best=0,timeSec=180,elapsedSec=0,active=new Map(),clock,spawner,token=0;
+let selectedDifficulty='normal',CURRENT_RUN=null,running=false,score=0,combo=0,best=0,timeSec=180,elapsedSec=0,active=new Map(),clock,spawner,token=0,targetClaiming=false,targetClaimed=false,targetPrize=null;
 let SOUND_ON=true,AC=null;
 
 async function api(url,opt={}){const r=await fetch(url,opt),d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.message||'操作失敗');return d}
@@ -117,19 +118,19 @@ function sfx(k){if(k==='hit')tone(520,.06,'sine',.10,140);else if(k==='gold'){to
 function ruleById(id){return RULES.find(r=>r.id===id)}
 function diff(){return DIFF[selectedDifficulty]||DIFF.normal}
 function holeSVG(){return `<svg viewBox="0 0 256 220" xmlns="http://www.w3.org/2000/svg"><ellipse cx="128" cy="105" rx="116" ry="76" fill="#86c75f"/><ellipse cx="128" cy="116" rx="102" ry="66" fill="#c99b68"/><path d="M35 112 C46 174,75 204,128 207 C181 204,210 174,221 112 C201 145,174 160,128 162 C82 160,55 145,35 112Z" fill="#a8794d"/><ellipse cx="128" cy="113" rx="86" ry="51" fill="#5b4030"/><ellipse cx="128" cy="119" rx="70" ry="39" fill="#2f211a"/></svg>`}
-function speedCfg(){return {slow:[780,190,1100],normal:[570,150,780],fast:[415,120,580]}[diff().speed]}
+function speedCfg(){return {slow:[780,190,1100],normal:[570,150,780],fast:[415,120,580],extreme:[300,95,430]}[diff().speed]}
 
 function renderChoices(){
  const allowed=(SETTINGS.allowedDifficulties||['easy','normal','hard']).filter(x=>DIFF[x]);
  if(!allowed.includes(selectedDifficulty))selectedDifficulty=allowed[0]||'normal';
- $('#diffChoice').innerHTML=allowed.map(d=>`<button type="button" class="diffBtn ${d===selectedDifficulty?'on':''}" data-d="${d}">${DIFF[d].label}<br><small>${d==='easy'?'3×3':d==='normal'?'4×4':'5×4'}</small></button>`).join('');
+ $('#diffChoice').innerHTML=allowed.map(d=>`<button type="button" class="diffBtn ${d===selectedDifficulty?'on':''}" data-d="${d}">${DIFF[d].label}<br><small>${d==='easy'?'3×3':d==='normal'?'4×4':d==='hard'?'5×4':'5×5'}</small></button>`).join('');
  document.querySelectorAll('.diffBtn').forEach(b=>b.onclick=()=>{selectedDifficulty=b.dataset.d;renderChoices()});
  $('#choiceBox').classList.toggle('hidden',SETTINGS.difficultyMode!=='player');
 }
 
 function updateSummary(){
  const time=SETTINGS.timeMode==='unlimited'?'不限時':SETTINGS.minutes+' 分鐘';
- const target=SETTINGS.targetMode==='unlimited'?'不限制分數':SETTINGS.target+' 分完成';
+ const target=SETTINGS.targetMode==='unlimited'?'不限制分數｜純排行榜':SETTINGS.target+' 分得獎｜可繼續挑戰';
  const diffText=SETTINGS.difficultyMode==='player'?'玩家自選難度':DIFF[SETTINGS.difficulty]?.label||'標準';
  $('#settingSummary').textContent=`${diffText}｜${time}｜${target}`;
 }
@@ -155,12 +156,12 @@ function makeBoard(){
 }
 function stop(){running=false;clearInterval(clock);clearInterval(spawner)}
 function beginGame(){
- stop();token++;makeBoard();running=true;score=0;combo=0;best=0;elapsedSec=0;
+ stop();token++;makeBoard();running=true;score=0;combo=0;best=0;elapsedSec=0;targetClaiming=false;targetClaimed=!!CURRENT_RUN?.targetClaimed;targetPrize=CURRENT_RUN?.prize||null;
  timeSec=SETTINGS.timeMode==='unlimited'?0:Math.max(1,+SETTINGS.minutes||1)*60;
  $('#entryCard').classList.add('hidden');$('#gameCard').classList.remove('hidden');
- $('#endFree').classList.toggle('hidden',SETTINGS.targetMode!=='unlimited');
+ $('#endFree').classList.remove('hidden');
  update();spawn();const c=speedCfg();spawner=setInterval(spawn,c[0]);
- clock=setInterval(()=>{if(SETTINGS.timeMode==='limited'){timeSec--;if(timeSec<=0){timeSec=0;update();finish(false);return}}else elapsedSec++;update()},1000);
+ clock=setInterval(()=>{if(SETTINGS.timeMode==='limited'){timeSec--;if(timeSec<=0){timeSec=0;update();finish();return}}else elapsedSec++;update()},1000);
 }
 async function startRun(){
  const player=$('#playerName').value.trim();
@@ -182,7 +183,7 @@ function spawn(){
  if(!running)return;const c=speedCfg(),cells=[...document.querySelectorAll('.cell')];if(active.size>=diff().max)return;
  const free=cells.filter((_,i)=>!active.has(i));if(!free.length)return;
  const cell=free[Math.floor(Math.random()*free.length)],i=+cell.dataset.i,im=cell.querySelector('.turtle'),r=weightedPick();
- im.src=IMAGES[r.id];im.className='turtle peek';active.set(i,{id:r.id,hp:r.id==='blue'?2:1,state:'peek',token});const z=token;
+ im.src=IMAGES[r.id];im.className='turtle peek';active.set(i,{id:r.id,hp:r.id==='blue'?2:1,state:'peek',token,resolved:false});const z=token;
  let stay=c[2];if(['gold','sunglass','redcap'].includes(r.id))stay*=.78;if(r.id==='sleep')stay*=1.25;
  setTimeout(()=>{const a=active.get(i);if(!running||!a||a.token!==z)return;a.state='up';im.classList.replace('peek','up')},c[1]);
  setTimeout(()=>hide(i,true),c[1]+stay);if(Math.random()<.16)setTimeout(spawn,90);
@@ -191,37 +192,49 @@ function hide(i,miss){
  const a=active.get(i);if(!a)return;const cell=document.querySelectorAll('.cell')[i],im=cell?.querySelector('.turtle');if(im)im.className='turtle';active.delete(i);if(miss&&running&&a.id!=='rock'){combo=0;update()}
 }
 function pop(cell,text,cls=''){const p=document.createElement('div');p.className='pop '+cls;p.textContent=text;cell.appendChild(p);setTimeout(()=>p.remove(),1000)}
+async function claimTargetIfNeeded(){
+ if(!running||targetClaimed||targetClaiming||SETTINGS.targetMode!=='limited'||score<SETTINGS.target||!CURRENT_RUN)return;
+ targetClaiming=true;
+ try{
+  const d=await api('/games/turtle/api/claim-target',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({activity:ACTIVITY,player:$('#playerName').value.trim(),runId:CURRENT_RUN.runId,score})});
+  if(d.completed){targetClaimed=true;targetPrize=d.prize||null;sfx('win');const prizeName=d.prize?.status==='awarded'?(d.prize.prizeName||'獎品'):'';$('#msg').textContent=prizeName?`🎁 已達標並獲得 ${prizeName}｜可繼續挑戰高分`:'✅ 已達得獎分數｜可繼續挑戰高分'}
+ }catch(e){$('#msg').textContent='⚠️ 已達標，獎勵確認失敗；結束本局時會再自動確認'}finally{targetClaiming=false}
+}
 function hit(i,cell){
- if(!running||!active.has(i))return;const a=active.get(i);if(a.state!=='up')return;
+ if(!running||!active.has(i))return;const a=active.get(i);if(a.state!=='up'||a.resolved)return;
  if(a.id==='blue'&&a.hp>1){a.hp--;combo++;best=Math.max(best,combo);sfx('blue');pop(cell,'再一下！','again');update();return}
+ a.resolved=true;
  const r=ruleById(a.id),delta=parseInt(r.score,10);
  if(delta<0){score=Math.max(0,score+delta);combo=0;sfx('rock');pop(cell,r.score,'minus')}else{score+=delta;combo++;best=Math.max(best,combo);sfx(a.id==='gold'?'gold':'hit');pop(cell,r.score,a.id==='gold'?'gold':'')}
- cell.querySelector('.turtle').classList.add('hit');setTimeout(()=>hide(i,false),160);update();
- if(SETTINGS.targetMode==='limited'&&score>=SETTINGS.target)setTimeout(()=>finish(true),120);
+ cell.querySelector('.turtle').classList.add('hit');setTimeout(()=>hide(i,false),160);update();claimTargetIfNeeded();
 }
 function update(){
  $('#score').textContent=score;$('#best').textContent=best;$('#time').textContent=SETTINGS.timeMode==='unlimited'?fmt(elapsedSec):fmt(timeSec);
  $('#timeLabel').textContent=SETTINGS.timeMode==='unlimited'?'遊戲時間':'剩餘時間';$('#targetShow').textContent=SETTINGS.target;
  $('#targetWrap').style.display=SETTINGS.targetMode==='unlimited'?'none':'inline';$('#bar').style.width=SETTINGS.targetMode==='unlimited'?'0%':Math.min(100,score/SETTINGS.target*100)+'%';
- if(running)$('#msg').textContent=SETTINGS.targetMode==='unlimited'?`目前 ${score} 分｜自由挑戰中`:`還差 ${Math.max(0,SETTINGS.target-score)} 分`;
+ if(running){if(targetClaimed)$('#msg').textContent=`✅ 已達標｜目前 ${score} 分｜可繼續挑戰`;else $('#msg').textContent=SETTINGS.targetMode==='unlimited'?`目前 ${score} 分｜自由挑戰中`:`還差 ${Math.max(0,SETTINGS.target-score)} 分`}
 }
-async function finish(win){
+async function finish(){
  if(!running)return;stop();[...active.keys()].forEach(i=>hide(i,false));
  let serverResult=null;
- if(CURRENT_RUN){try{serverResult=await api('/games/turtle/api/finish',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({activity:ACTIVITY,player:$('#playerName').value.trim(),runId:CURRENT_RUN.runId,score,completed:win===true})})}catch(e){serverResult={error:e.message}}CURRENT_RUN=null}
- const realWin=serverResult?.completed===true,pr=serverResult?.prize;let prize='';
- if(realWin&&pr){if(pr.status==='awarded')prize=`<br><b>🎁 恭喜獲得：${pr.prizeName||'獎品'}</b>`;else if(pr.status==='limit_reached')prize='<br>本場已達可得獎次數上限';else if(['out_of_stock','game_out_of_stock','tier_out_of_stock'].includes(pr.status))prize='<br>獎品已領完'}
- $('#resultTitle').textContent=realWin?'🎉 挑戰成功！':(SETTINGS.targetMode==='unlimited'?'🎮 本局結束':'⏰ 本局未完成');
- $('#resultText').innerHTML=realWin?`本局 ${score} 分，已達成 ${SETTINGS.target} 分目標。${prize}`:(SETTINGS.targetMode==='unlimited'?`本局共獲得 ${score} 分。<br>本場設定為不限制分數，不觸發完成得獎。`:`本局 ${score} 分，目標 ${SETTINGS.target} 分。${serverResult?.error?'<br>'+serverResult.error:''}`);
- if(realWin)sfx('win');$('#resultOverlay').classList.remove('hidden');
+ if(CURRENT_RUN){try{serverResult=await api('/games/turtle/api/finish',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({activity:ACTIVITY,player:$('#playerName').value.trim(),runId:CURRENT_RUN.runId,score})})}catch(e){serverResult={error:e.message}}CURRENT_RUN=null}
+ const realWin=serverResult?.completed===true,pr=serverResult?.prize||targetPrize;let prize='';
+ if(realWin&&pr){if(pr.status==='awarded')prize=`<br><b>🎁 已獲得：${pr.prizeName||'獎品'}</b>`;else if(pr.status==='limit_reached')prize='<br>本場已達可得獎次數上限';else if(['out_of_stock','game_out_of_stock','tier_out_of_stock'].includes(pr.status))prize='<br>獎品已領完'}
+ $('#resultTitle').textContent='🎮 本局結束';
+ $('#resultText').innerHTML=realWin?`本局最終 ${score} 分，已達成 ${SETTINGS.target} 分得獎門檻。${prize}`:(SETTINGS.targetMode==='unlimited'?`本局最終 ${score} 分。<br>本場為不限制分數，只記錄成績／排行榜。`:`本局最終 ${score} 分，得獎門檻 ${SETTINGS.target} 分。${serverResult?.error?'<br>'+serverResult.error:''}`);
+ $('#resultOverlay').classList.remove('hidden');
 }
 function resetEntry(){$('#resultOverlay').classList.add('hidden');$('#gameCard').classList.add('hidden');$('#entryCard').classList.remove('hidden');renderChoices();updateSummary()}
 $('#ruleGrid').innerHTML=RULES.map(r=>`<div class="rule"><img src="${IMAGES[r.id]}"><div><strong>${r.name} <span class="score">${r.score}</span></strong><small>${r.desc}</small></div></div>`).join('');
 $('#showRules').onclick=()=>$('#rulesOverlay').classList.remove('hidden');$('#closeRules').onclick=()=>$('#rulesOverlay').classList.add('hidden');
 // Mobile: prevent browser double-tap/double-click zoom only inside the game board.
-document.querySelector('.board')?.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
+const playBoard=document.querySelector('.board');
+let lastBoardTouchEnd=0;
+playBoard?.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
+playBoard?.addEventListener('touchend',e=>{const now=Date.now();if(now-lastBoardTouchEnd<380)e.preventDefault();lastBoardTouchEnd=now},{passive:false});
+playBoard?.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
 $('#soundToggle').onclick=()=>{SOUND_ON=!SOUND_ON;ensureAudio();$('#soundToggle').textContent=SOUND_ON?'🔊':'🔇'};
-$('#start').onclick=startRun;$('#endFree').onclick=()=>finish(false);$('#again').onclick=resetEntry;$('#hall').onclick=()=>location.href='/?activity='+encodeURIComponent(ACTIVITY);
+$('#start').onclick=startRun;$('#endFree').onclick=()=>{if(confirm('確定要結束本局嗎？目前分數會直接保存。'))finish()};$('#again').onclick=resetEntry;$('#hall').onclick=()=>location.href='/?activity='+encodeURIComponent(ACTIVITY);
 const saved=localStorage.getItem(`turtleName:${ACTIVITY}`);if(saved)$('#playerName').value=saved;
 makeBoard();update();loadHallSettings();
 </script>

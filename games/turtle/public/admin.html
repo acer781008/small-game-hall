@@ -43,6 +43,7 @@ h2{margin:0 0 5px;font-size:23px}p{margin:0 0 14px;color:#756b79;font-weight:700
       <label class="chip"><input class="adiff" type="checkbox" value="easy"> 🌱 簡單｜3×3</label>
       <label class="chip"><input class="adiff" type="checkbox" value="normal"> ⭐ 標準｜4×4</label>
       <label class="chip"><input class="adiff" type="checkbox" value="hard"> 🔥 困難｜5×4</label>
+      <label class="chip"><input class="adiff" type="checkbox" value="extreme"> ⚡ 極難｜5×5</label>
     </div>
   </div>
 
@@ -52,6 +53,7 @@ h2{margin:0 0 5px;font-size:23px}p{margin:0 0 14px;color:#756b79;font-weight:700
       <option value="easy">🌱 簡單｜3×3</option>
       <option value="normal">⭐ 標準｜4×4</option>
       <option value="hard">🔥 困難｜5×4</option>
+      <option value="extreme">⚡ 極難｜5×5</option>
     </select>
   </label>
 
@@ -71,7 +73,7 @@ h2{margin:0 0 5px;font-size:23px}p{margin:0 0 14px;color:#756b79;font-weight:700
   </label>
 
   <label class="field full">
-    <span>完成條件</span>
+    <span>得獎分數</span>
     <select id="targetScore">
       <option value="10">10 分</option>
       <option value="20">20 分</option>
@@ -83,13 +85,16 @@ h2{margin:0 0 5px;font-size:23px}p{margin:0 0 14px;color:#756b79;font-weight:700
       <option value="200">200 分</option>
       <option value="250">250 分</option>
       <option value="300">300 分</option>
-      <option value="0">不限制分數</option>
+      <option value="400">400 分</option>
+      <option value="500">500 分</option>
+      <option value="0">不限制分數（純排行榜）</option>
     </select>
   </label>
 </div>
 
 <div class="note">
-簡單＝3×3、標準＝4×4、困難＝5×4；速度、同時出現數量與特殊烏龜比例由系統依難度自動調整。
+簡單＝3×3、標準＝4×4、困難＝5×4、極難＝5×5；速度、同時出現數量與特殊烏龜比例由系統依難度自動調整。
+有設定得獎分數時，玩家達標會先取得獎勵，但可繼續挑戰高分；不限制分數則只記錄最終分數／排行榜。
 開啟玩家自選後，玩家只會看到主控勾選開放的難度。
 </div>
 
